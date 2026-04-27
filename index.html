@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hyper Tetris — 3D / 4D / 5D / 6D</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #05060c;
+        --fg: #e7eaf6;
+        --accent: #5cf2ff;
+        --accent-2: #c77dff;
+        --warn: #ffb86b;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background:
+          radial-gradient(ellipse at 20% 10%, rgba(199,125,255,0.18) 0%, transparent 55%),
+          radial-gradient(ellipse at 80% 90%, rgba(92,242,255,0.14) 0%, transparent 60%),
+          radial-gradient(ellipse at 50% 50%, #0c1030 0%, #04050a 75%);
+        color: var(--fg);
+        font-family: ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
+          "Hiragino Sans", "Yu Gothic UI", sans-serif;
+        overflow: hidden;
+      }
+      #app { position: relative; width: 100vw; height: 100vh; }
+      canvas { display: block; }
+      #hud {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      .panel {
+        position: absolute;
+        background: linear-gradient(180deg, rgba(10,14,32,0.72), rgba(7,9,22,0.62));
+        border: 1px solid rgba(92, 242, 255, 0.25);
+        border-radius: 12px;
+        padding: 12px 14px;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        font-size: 13px;
+        line-height: 1.5;
+        box-shadow:
+          0 0 24px rgba(92,242,255,0.06),
+          inset 0 1px 0 rgba(255,255,255,0.04);
+      }
+      .panel h2 {
+        margin: 0 0 6px 0;
+        font-size: 11px;
+        color: var(--accent);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      #panel-stats { top: 16px; left: 16px; min-width: 200px; }
+      #panel-mode  { top: 16px; right: 16px; min-width: 220px; text-align: right; }
+      #panel-keys  { bottom: 16px; left: 16px; max-width: 320px; font-size: 11px; opacity: 0.9; }
+      #panel-mini  { bottom: 16px; right: 16px; }
+      #panel-hold  { top: 160px; left: 16px; width: 160px; text-align: center; }
+      #panel-next  { top: 160px; right: 16px; width: 160px; text-align: center; }
+      .preview-canvas {
+        background: rgba(0,0,0,0.45);
+        border-radius: 8px;
+        margin-top: 4px;
+      }
+      #panel-mini canvas { background: rgba(0,0,0,0.4); border-radius: 6px; }
+      .preview-label {
+        font-size: 10px;
+        opacity: 0.7;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        margin-top: 4px;
+      }
+      #toast {
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 36px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-shadow: 0 0 24px var(--accent);
+        opacity: 0;
+        transition: opacity .25s ease-out;
+        pointer-events: none;
+      }
+      #toast.show { opacity: 1; }
+      .stat-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .stat-row span:last-child { color: var(--accent); font-variant-numeric: tabular-nums; }
+      .keymap {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 2px 10px;
+      }
+      .keymap kbd {
+        background: rgba(92, 242, 255, 0.12);
+        border: 1px solid rgba(92, 242, 255, 0.3);
+        border-radius: 4px;
+        padding: 1px 5px;
+        font-family: ui-monospace, monospace;
+        font-size: 10px;
+        white-space: nowrap;
+      }
+      .keymap-section {
+        grid-column: 1 / -1;
+        margin: 4px 0 1px 0;
+        font-size: 9px;
+        letter-spacing: 0.16em;
+        color: var(--accent-2);
+        text-transform: uppercase;
+        opacity: 0.85;
+      }
+      #gameover, #help-overlay, #pause-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(2, 4, 12, 0.78);
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        pointer-events: auto;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+      }
+      #gameover.show, #help-overlay.show, #pause-overlay.show { display: flex; }
+      #gameover h1 {
+        font-size: 56px;
+        margin: 0;
+        color: var(--warn);
+        letter-spacing: 0.1em;
+      }
+      #pause-overlay h1 {
+        font-size: 64px;
+        margin: 0;
+        color: var(--accent);
+        letter-spacing: 0.3em;
+        text-shadow: 0 0 36px var(--accent);
+      }
+      #pause-overlay .hint, #help-overlay .hint {
+        font-size: 12px;
+        opacity: 0.7;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+      }
+      #help-overlay h1 {
+        font-size: 36px;
+        margin: 0;
+        color: var(--accent);
+        letter-spacing: 0.18em;
+      }
+      #help-overlay .help-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+        max-width: 720px;
+        font-size: 13px;
+      }
+      #help-overlay .help-grid h3 {
+        margin: 0 0 8px 0;
+        font-size: 11px;
+        color: var(--accent-2);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+      #gameover button, #help-overlay button {
+        background: transparent;
+        color: var(--accent);
+        border: 1px solid var(--accent);
+        padding: 10px 28px;
+        font-size: 14px;
+        letter-spacing: 0.2em;
+        cursor: pointer;
+        border-radius: 6px;
+      }
+      #gameover button:hover, #help-overlay button:hover { background: rgba(92,242,255,0.12); }
+      #help-fab {
+        position: absolute;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(10,14,32,0.7);
+        border: 1px solid rgba(92, 242, 255, 0.35);
+        color: var(--accent);
+        font-size: 11px;
+        letter-spacing: 0.2em;
+        padding: 6px 14px;
+        border-radius: 999px;
+        cursor: pointer;
+        pointer-events: auto;
+        backdrop-filter: blur(6px);
+      }
+      #help-fab:hover { background: rgba(92,242,255,0.15); }
+      #status-bar {
+        position: absolute;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%) translateY(36px);
+        display: flex;
+        gap: 6px;
+        pointer-events: none;
+      }
+      .status-pill {
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-family: ui-monospace, monospace;
+        background: rgba(10,14,32,0.6);
+        backdrop-filter: blur(6px);
+      }
+      .status-pill.on  { color: #5cf2ff; border: 1px solid rgba(92,242,255,0.5); box-shadow: 0 0 12px rgba(92,242,255,0.25); }
+      .status-pill.off { color: #6c7390; border: 1px solid rgba(108,115,144,0.4); }
+      .badge {
+        display: inline-block;
+        padding: 1px 6px;
+        font-size: 9px;
+        letter-spacing: 0.12em;
+        border-radius: 4px;
+        background: rgba(199,125,255,0.18);
+        color: var(--accent-2);
+        margin-left: 6px;
+        vertical-align: middle;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div id="hud">
+        <div id="panel-stats" class="panel">
+          <h2>Stats</h2>
+          <div class="stat-row"><span>Score</span><span id="stat-score">0</span></div>
+          <div class="stat-row"><span>Level</span><span id="stat-level">1</span></div>
+          <div class="stat-row"><span>Lines</span><span id="stat-lines">0</span></div>
+          <div class="stat-row"><span>Combo</span><span id="stat-combo">0</span></div>
+        </div>
+        <div id="panel-mode" class="panel">
+          <h2>Mode</h2>
+          <div style="font-size: 28px; font-weight: 700; color: var(--accent);" id="stat-mode">3D</div>
+          <div style="font-size: 11px; opacity: 0.7;" id="stat-slice">slice: —</div>
+        </div>
+        <div id="panel-hold" class="panel">
+          <h2>Hold <span class="badge">TAB</span></h2>
+          <canvas id="hold-canvas" class="preview-canvas" width="140" height="100"></canvas>
+          <div class="preview-label" id="hold-label">— empty —</div>
+        </div>
+        <div id="panel-next" class="panel">
+          <h2>Next</h2>
+          <canvas id="next-canvas" class="preview-canvas" width="140" height="100"></canvas>
+          <div class="preview-label" id="next-label">—</div>
+        </div>
+        <div id="panel-keys" class="panel">
+          <h2>Keys</h2>
+          <div class="keymap">
+            <div class="keymap-section">Move</div>
+            <kbd>← →</kbd><span>x axis</span>
+            <kbd>↑ ↓</kbd><span>z axis</span>
+            <kbd>Space</kbd><span>hard drop</span>
+            <kbd>Shift</kbd><span>soft drop</span>
+            <kbd>Tab</kbd><span>hold piece</span>
+            <div class="keymap-section">Rotate (Shift = reverse)</div>
+            <kbd>Q W E</kbd><span>XY / YZ / ZX</span>
+            <kbd>A S D</kbd><span>XW / YW / ZW <span class="badge">4D+</span></span>
+            <kbd>Z X</kbd><span>XV / YV <span class="badge">5D+</span></span>
+            <kbd>C V</kbd><span>XU / ZU <span class="badge">6D</span></span>
+            <div class="keymap-section">Dim / Slice</div>
+            <kbd>3 4 5 6</kbd><span>switch dimension</span>
+            <kbd>[ ]</kbd><span>slice w</span>
+            <kbd>, .</kbd><span>slice v <span class="badge">5D+</span></span>
+            <kbd>- =</kbd><span>slice u <span class="badge">6D</span></span>
+            <div class="keymap-section">System</div>
+            <kbd>P</kbd><span>pause</span>
+            <kbd>R</kbd><span>restart</span>
+            <kbd>O</kbd><span>auto-play (AI)</span>
+            <kbd>M</kbd><span>mute audio</span>
+            <kbd>H · ?</kbd><span>help overlay</span>
+          </div>
+        </div>
+        <div id="panel-mini" class="panel">
+          <h2>Hyper Map</h2>
+          <canvas id="minimap" width="128" height="128"></canvas>
+        </div>
+        <button id="help-fab" type="button">? HELP</button>
+        <div id="status-bar"></div>
+        <div id="toast"></div>
+        <div id="pause-overlay">
+          <h1>PAUSED</h1>
+          <div class="hint">press <kbd style="background:rgba(92,242,255,0.15);border:1px solid rgba(92,242,255,0.35);padding:2px 8px;border-radius:4px;">P</kbd> to resume</div>
+        </div>
+        <div id="help-overlay">
+          <h1>HYPER TETRIS — GUIDE</h1>
+          <div class="help-grid">
+            <div>
+              <h3>What's a slice?</h3>
+              <p style="opacity:0.85;line-height:1.6;">Higher dimensions (4D / 5D / 6D) extend the well along extra axes (<em>w</em>, <em>v</em>, <em>u</em>). The bright cyan well in the centre is the slice you're playing in; the faint outlined wells beside / in front / above it are <em>neighbouring slices</em> — w → left/right, v → front/back, u → up/down. A piece that crosses a slice boundary visibly extends into the next well. Walk through slices with <kbd style="background:rgba(92,242,255,0.15);padding:1px 5px;border-radius:3px;">[ ]</kbd> (w), <kbd style="background:rgba(92,242,255,0.15);padding:1px 5px;border-radius:3px;">, .</kbd> (v), <kbd style="background:rgba(92,242,255,0.15);padding:1px 5px;border-radius:3px;">- =</kbd> (u).</p>
+            </div>
+            <div>
+              <h3>Hyper-clear</h3>
+              <p style="opacity:0.85;line-height:1.6;">A line clears when an entire <em>hyperplane</em> is full. The more dimensions, the bigger the score multiplier — but pieces also fall slower. Clear 4+ planes at once for a HYPER bonus.</p>
+            </div>
+            <div>
+              <h3>Hold</h3>
+              <p style="opacity:0.85;line-height:1.6;">Press <kbd style="background:rgba(92,242,255,0.15);padding:1px 5px;border-radius:3px;">Tab</kbd> to stash the current piece and pull from hold. Only once per piece — useful to save an I-piece for a deep clear.</p>
+            </div>
+            <div>
+              <h3>Camera</h3>
+              <p style="opacity:0.85;line-height:1.6;">Drag with the mouse to orbit, scroll to zoom. The camera auto-centers when you switch modes.</p>
+            </div>
+          </div>
+          <button id="help-close" type="button">CLOSE (H)</button>
+        </div>
+        <div id="gameover">
+          <h1>GAME OVER</h1>
+          <div id="final-score" style="font-size: 18px; opacity: 0.8;"></div>
+          <button id="restart-btn">RESTART</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
