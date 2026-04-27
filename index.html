@@ -2,7 +2,10 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
     <title>Hyper Tetris — 3D / 4D / 5D / 6D</title>
     <style>
       :root {
@@ -229,6 +232,163 @@
         margin-left: 6px;
         vertical-align: middle;
       }
+
+      /* ------------ Touch controls ------------ */
+      #touch-controls { display: none; }
+      .touch-btn {
+        background: rgba(10,14,32,0.7);
+        border: 1px solid rgba(92,242,255,0.4);
+        color: var(--accent);
+        font-size: 18px;
+        font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+        font-weight: 600;
+        border-radius: 14px;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        cursor: pointer;
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        transition: background 0.08s ease;
+      }
+      .touch-btn:active {
+        background: rgba(92,242,255,0.32);
+        border-color: var(--accent);
+      }
+      .touch-btn[disabled] {
+        opacity: 0.3;
+        pointer-events: none;
+      }
+      #touch-dpad {
+        position: absolute;
+        bottom: max(20px, env(safe-area-inset-bottom));
+        left: max(16px, env(safe-area-inset-left));
+        display: grid;
+        grid-template-columns: 56px 56px 56px;
+        grid-template-rows: 56px 56px 56px;
+        gap: 4px;
+        pointer-events: auto;
+      }
+      #touch-dpad .touch-btn { width: 56px; height: 56px; font-size: 22px; }
+      #touch-dpad [data-act="up"]    { grid-column: 2; grid-row: 1; }
+      #touch-dpad [data-act="left"]  { grid-column: 1; grid-row: 2; }
+      #touch-dpad [data-act="soft"]  { grid-column: 2; grid-row: 2; font-size: 14px; }
+      #touch-dpad [data-act="right"] { grid-column: 3; grid-row: 2; }
+      #touch-dpad [data-act="down"]  { grid-column: 2; grid-row: 3; }
+
+      #touch-actions {
+        position: absolute;
+        bottom: max(20px, env(safe-area-inset-bottom));
+        right: max(16px, env(safe-area-inset-right));
+        display: grid;
+        grid-template-columns: 64px 64px;
+        grid-template-rows: 56px 56px 56px;
+        gap: 6px;
+        pointer-events: auto;
+      }
+      #touch-actions .touch-btn { font-size: 16px; }
+      #touch-actions [data-act="hard"] {
+        grid-column: 1 / span 2;
+        grid-row: 3;
+        background: rgba(199,125,255,0.18);
+        border-color: rgba(199,125,255,0.55);
+        color: var(--accent-2);
+        font-size: 14px;
+        letter-spacing: 0.18em;
+      }
+      #touch-actions [data-act="hard"]:active {
+        background: rgba(199,125,255,0.4);
+      }
+
+      #touch-slice {
+        position: absolute;
+        right: max(12px, env(safe-area-inset-right));
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        pointer-events: auto;
+      }
+      #touch-slice .touch-btn {
+        width: 48px;
+        height: 32px;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+      }
+
+      #touch-mode {
+        position: absolute;
+        top: max(56px, env(safe-area-inset-top));
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 4px;
+        pointer-events: auto;
+      }
+      #touch-mode .touch-btn {
+        width: 44px;
+        height: 30px;
+        font-size: 11px;
+        letter-spacing: 0.05em;
+        padding: 0;
+      }
+      #touch-mode .touch-btn.active {
+        background: rgba(92,242,255,0.3);
+        border-color: var(--accent);
+      }
+
+      /* Show touch UI on touch-first devices and shrink HUD */
+      @media (pointer: coarse), (max-width: 720px) {
+        #touch-controls { display: block; }
+        #panel-keys { display: none; }
+        #panel-stats {
+          top: 12px;
+          left: 12px;
+          min-width: 0;
+          padding: 8px 10px;
+          font-size: 11px;
+        }
+        #panel-stats .stat-row { gap: 10px; }
+        #panel-mode {
+          top: 12px;
+          right: 12px;
+          min-width: 0;
+          padding: 8px 10px;
+          font-size: 11px;
+        }
+        #panel-mode > div:first-of-type { font-size: 18px !important; }
+        #panel-hold, #panel-next {
+          top: auto;
+          bottom: 200px;
+          width: 76px;
+          padding: 6px;
+        }
+        #panel-hold { left: 8px; }
+        #panel-next { right: 8px; }
+        #panel-hold canvas, #panel-next canvas { width: 64px; height: 48px; }
+        #panel-hold h2, #panel-next h2 { font-size: 9px; margin-bottom: 2px; }
+        #panel-hold .preview-label, #panel-next .preview-label { font-size: 8px; }
+        #panel-mini {
+          right: 8px;
+          bottom: 8px;
+          padding: 6px;
+          transform: scale(0.78);
+          transform-origin: bottom right;
+        }
+        #status-bar { transform: translateX(-50%) translateY(28px) scale(0.85); }
+        #help-fab { font-size: 10px; padding: 5px 10px; }
+        #toast { font-size: 24px; }
+      }
+
+      /* Very narrow / portrait phones */
+      @media (max-width: 480px) {
+        #panel-hold, #panel-next { display: none; }
+        #panel-mini {
+          transform: scale(0.7);
+        }
+      }
     </style>
   </head>
   <body>
@@ -289,6 +449,36 @@
         </div>
         <button id="help-fab" type="button">? HELP</button>
         <div id="status-bar"></div>
+        <div id="touch-controls">
+          <div id="touch-mode">
+            <button class="touch-btn" type="button" data-act="m3">3D</button>
+            <button class="touch-btn" type="button" data-act="m4">4D</button>
+            <button class="touch-btn" type="button" data-act="m5">5D</button>
+            <button class="touch-btn" type="button" data-act="m6">6D</button>
+          </div>
+          <div id="touch-slice">
+            <button class="touch-btn" type="button" data-act="w+" data-axis="0">w+</button>
+            <button class="touch-btn" type="button" data-act="w-" data-axis="0">w−</button>
+            <button class="touch-btn" type="button" data-act="v+" data-axis="1">v+</button>
+            <button class="touch-btn" type="button" data-act="v-" data-axis="1">v−</button>
+            <button class="touch-btn" type="button" data-act="u+" data-axis="2">u+</button>
+            <button class="touch-btn" type="button" data-act="u-" data-axis="2">u−</button>
+          </div>
+          <div id="touch-dpad">
+            <button class="touch-btn" type="button" data-act="up">▲</button>
+            <button class="touch-btn" type="button" data-act="left">◀</button>
+            <button class="touch-btn" type="button" data-act="soft">SOFT</button>
+            <button class="touch-btn" type="button" data-act="right">▶</button>
+            <button class="touch-btn" type="button" data-act="down">▼</button>
+          </div>
+          <div id="touch-actions">
+            <button class="touch-btn" type="button" data-act="rotateAlt">↺</button>
+            <button class="touch-btn" type="button" data-act="rotate">↻</button>
+            <button class="touch-btn" type="button" data-act="hold">HOLD</button>
+            <button class="touch-btn" type="button" data-act="pause">⏸</button>
+            <button class="touch-btn" type="button" data-act="hard">HARD DROP</button>
+          </div>
+        </div>
         <div id="toast"></div>
         <div id="pause-overlay">
           <h1>PAUSED</h1>

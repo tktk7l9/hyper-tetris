@@ -6,7 +6,8 @@ import { BoardView } from "./render/board-view.js";
 import { EffectsLayer } from "./render/effects.js";
 import { Hud } from "./render/hud.js";
 import { createRenderContext } from "./render/renderer.js";
-import { attachControls } from "./input/controls.js";
+import { attachControls, type ControlsHooks } from "./input/controls.js";
+import { attachTouchControls } from "./input/touch.js";
 import { GRAVITY_AXIS, type DimMode } from "./dims/coords.js";
 import { AudioEngine } from "./audio/audio.js";
 import { AutoPilot } from "./ai/autopilot.js";
@@ -73,7 +74,9 @@ rebuildKindColors();
 
 const modeNames: Record<DimMode, string> = { 3: "3D", 4: "4D", 5: "5D", 6: "6D" };
 
-attachControls(state, {
+let touch: ReturnType<typeof attachTouchControls> | undefined;
+
+const hooks: ControlsHooks = {
   onAnyKey: () => {
     audio.init();
     audio.resume();
@@ -84,6 +87,7 @@ attachControls(state, {
     hud.showToast(`MODE ${modeNames[mode]}`, 1300);
     hud.setGameOver(false);
     audio.playSfx("mode");
+    touch?.refresh();
   },
   onPause: (paused) => {
     if (!paused) hud.showToast("GO", 700);
@@ -120,7 +124,10 @@ attachControls(state, {
     hud.showToast(on ? "AUTO ON" : "AUTO OFF", 700);
     audio.playSfx("hold");
   },
-});
+};
+
+attachControls(state, hooks);
+touch = attachTouchControls(state, hooks);
 
 // game loop with fixed-step accumulator
 let last = performance.now();
