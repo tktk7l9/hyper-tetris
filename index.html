@@ -2,10 +2,8 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Hyper Tetris — 3D / 4D / 5D / 6D</title>
     <meta name="description" content="3D / 4D / 5D / 6D次元に拡張された実験的テトリスゲーム。次元を上げるほど大きなスコア倍率、AIオートプレイ対応。" />
     <meta name="theme-color" content="#05060c" />
@@ -65,14 +63,14 @@
       }
       .panel h2 {
         margin: 0 0 6px 0;
-        font-size: 11px;
+        font-size: 12px;
         color: var(--accent);
         letter-spacing: 0.12em;
         text-transform: uppercase;
       }
       #panel-stats { top: 16px; left: 16px; min-width: 200px; }
       #panel-mode  { top: 16px; right: 16px; min-width: 220px; text-align: right; }
-      #panel-keys  { bottom: 16px; left: 16px; max-width: 320px; font-size: 11px; opacity: 0.9; }
+      #panel-keys  { bottom: 16px; left: 16px; max-width: 320px; font-size: 12px; opacity: 0.9; }
       #panel-mini  { bottom: 16px; right: 16px; }
       #panel-hold  { top: 160px; left: 16px; width: 160px; text-align: center; }
       #panel-next  { top: 160px; right: 16px; width: 160px; text-align: center; }
@@ -83,7 +81,7 @@
       }
       #panel-mini canvas { background: rgba(0,0,0,0.4); border-radius: 6px; }
       .preview-label {
-        font-size: 10px;
+        font-size: 12px;
         opacity: 0.7;
         letter-spacing: 0.15em;
         text-transform: uppercase;
@@ -119,13 +117,13 @@
         border-radius: 4px;
         padding: 1px 5px;
         font-family: ui-monospace, monospace;
-        font-size: 10px;
+        font-size: 12px;
         white-space: nowrap;
       }
       .keymap-section {
         grid-column: 1 / -1;
         margin: 4px 0 1px 0;
-        font-size: 9px;
+        font-size: 12px;
         letter-spacing: 0.16em;
         color: var(--accent-2);
         text-transform: uppercase;
@@ -179,7 +177,7 @@
       }
       #help-overlay .help-grid h3 {
         margin: 0 0 8px 0;
-        font-size: 11px;
+        font-size: 12px;
         color: var(--accent-2);
         letter-spacing: 0.16em;
         text-transform: uppercase;
@@ -203,7 +201,7 @@
         background: rgba(10,14,32,0.7);
         border: 1px solid rgba(92, 242, 255, 0.35);
         color: var(--accent);
-        font-size: 11px;
+        font-size: 12px;
         letter-spacing: 0.2em;
         padding: 6px 14px;
         border-radius: 999px;
@@ -222,7 +220,7 @@
         pointer-events: none;
       }
       .status-pill {
-        font-size: 10px;
+        font-size: 12px;
         letter-spacing: 0.18em;
         padding: 3px 10px;
         border-radius: 999px;
@@ -235,7 +233,7 @@
       .badge {
         display: inline-block;
         padding: 1px 6px;
-        font-size: 9px;
+        font-size: 12px;
         letter-spacing: 0.12em;
         border-radius: 4px;
         background: rgba(199,125,255,0.18);
@@ -325,7 +323,7 @@
       #touch-slice .touch-btn {
         width: 48px;
         height: 32px;
-        font-size: 11px;
+        font-size: 12px;
         letter-spacing: 0.06em;
       }
 
@@ -341,7 +339,7 @@
       #touch-mode .touch-btn {
         width: 44px;
         height: 30px;
-        font-size: 11px;
+        font-size: 12px;
         letter-spacing: 0.05em;
         padding: 0;
       }
@@ -359,7 +357,7 @@
           left: 12px;
           min-width: 0;
           padding: 8px 10px;
-          font-size: 11px;
+          font-size: 12px;
         }
         #panel-stats .stat-row { gap: 10px; }
         #panel-mode {
@@ -367,7 +365,7 @@
           right: 12px;
           min-width: 0;
           padding: 8px 10px;
-          font-size: 11px;
+          font-size: 12px;
         }
         #panel-mode > div:first-of-type { font-size: 18px !important; }
         #panel-hold, #panel-next {
@@ -379,8 +377,8 @@
         #panel-hold { left: 8px; }
         #panel-next { right: 8px; }
         #panel-hold canvas, #panel-next canvas { width: 64px; height: 48px; }
-        #panel-hold h2, #panel-next h2 { font-size: 9px; margin-bottom: 2px; }
-        #panel-hold .preview-label, #panel-next .preview-label { font-size: 8px; }
+        #panel-hold h2, #panel-next h2 { font-size: 12px; margin-bottom: 2px; }
+        #panel-hold .preview-label, #panel-next .preview-label { font-size: 12px; }
         #panel-mini {
           right: 8px;
           bottom: 8px;
@@ -389,7 +387,7 @@
           transform-origin: bottom right;
         }
         #status-bar { transform: translateX(-50%) translateY(28px) scale(0.85); }
-        #help-fab { font-size: 10px; padding: 5px 10px; }
+        #help-fab { font-size: 12px; padding: 5px 10px; }
         #toast { font-size: 24px; }
       }
 
@@ -400,11 +398,67 @@
           transform: scale(0.7);
         }
       }
+
+      /* Start screen */
+      #start-screen {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        z-index: 200;
+        pointer-events: auto;
+      }
+      .start-title {
+        font-size: 72px;
+        font-weight: 900;
+        color: var(--accent);
+        letter-spacing: 0.2em;
+        text-shadow: 0 0 60px var(--accent), 0 0 120px rgba(92,242,255,0.4);
+        text-align: center;
+      }
+      .start-sub {
+        font-size: 18px;
+        color: var(--accent-2);
+        letter-spacing: 0.3em;
+        opacity: 0.9;
+      }
+      #start-btn {
+        background: transparent;
+        color: var(--accent);
+        border: 1px solid var(--accent);
+        padding: 14px 40px;
+        font-size: 16px;
+        letter-spacing: 0.3em;
+        cursor: pointer;
+        border-radius: 6px;
+        font-family: inherit;
+        box-shadow: 0 0 24px rgba(92,242,255,0.2);
+      }
+      #start-btn:hover { background: rgba(92,242,255,0.12); box-shadow: 0 0 36px rgba(92,242,255,0.35); }
+      .start-hint {
+        font-size: 12px;
+        color: var(--fg);
+        opacity: 0.5;
+        letter-spacing: 0.2em;
+      }
+      @media (max-width: 480px) {
+        .start-title { font-size: 42px; letter-spacing: 0.1em; }
+        .start-sub { font-size: 14px; }
+      }
     </style>
   </head>
   <body>
     <div id="app">
       <div id="hud">
+        <div id="start-screen">
+          <h1 class="start-title">HYPER TETRIS</h1>
+          <p class="start-sub">3D / 4D / 5D / 6D</p>
+          <button id="start-btn" type="button">START GAME</button>
+          <p class="start-hint">or press any key</p>
+        </div>
         <div id="panel-stats" class="panel">
           <h2>Stats</h2>
           <div class="stat-row"><span>Score</span><span id="stat-score">0</span></div>
@@ -524,6 +578,6 @@
         </div>
       </div>
     </div>
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/boot.ts"></script>
   </body>
 </html>
