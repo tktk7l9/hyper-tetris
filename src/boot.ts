@@ -1,4 +1,11 @@
 // Tiny bootstrap — Three.js game bundle loads only after user interaction.
+
+// Vercel Web Analytics — production only. Script + beacon are same-origin
+// (/_vercel/insights/*), so the strict CSP (script-src/connect-src 'self') is unaffected.
+if (import.meta.env.PROD) {
+  void import("@vercel/analytics").then(({ inject }) => inject());
+}
+
 let started = false;
 
 async function startGame() {
