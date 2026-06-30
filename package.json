@@ -11,10 +11,10 @@
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
-    "three": "^0.184.0"
+    "three": "^0.185.0"
   },
   "devDependencies": {
-    "@types/three": "^0.184.0",
+    "@types/three": "^0.185.0",
     "typescript": "^6.0.3",
     "vite": "^8.1.0"
   }
