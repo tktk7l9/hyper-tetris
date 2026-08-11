@@ -1,6 +1,6 @@
 # Hyper Tetris — 3D / 4D / 5D / 6D
 
-**[▶ Play Now](https://hyper-tetris.vercel.app)**
+**[▶ Play Now](https://hyper-tetris.saitotakuya0719.workers.dev)**
 
 3D / 4D / 5D / 6D次元に拡張された実験的テトリスゲーム。Three.js で描画し、次元を上げるほど大きなスコア倍率を得られる。AIオートプレイ機能搭載。
 
@@ -39,3 +39,12 @@ npm run dev   # http://localhost:5173
 - Three.js
 - TypeScript
 - Vite
+
+## ホスティング
+
+本番は **Cloudflare Workers (static assets)**: https://hyper-tetris.saitotakuya0719.workers.dev
+
+2026-08-11、Vercel 無料枠の超過でアカウントが停止（全プロジェクトが
+`402 DEPLOYMENT_DISABLED`）したため移行した。`wrangler.jsonc` の `assets` だけで
+配信し、セキュリティヘッダーは `public/_headers`（`vercel.json` の `headers` を
+移植）。`npm run deploy` で build + wrangler deploy。vercel.json は残置。

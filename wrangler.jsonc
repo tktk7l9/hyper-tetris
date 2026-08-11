@@ -1,0 +1,20 @@
+/**
+ * hyper-tetris — Cloudflare Workers (static assets only)
+ * https://developers.cloudflare.com/workers/static-assets/
+ *
+ * ビルド成果物は純粋な静的ファイルなので Worker スクリプト(main)は無い。
+ * セキュリティヘッダーは public/_headers が dist へコピーされて効く。
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hyper-tetris",
+  "compatibility_date": "2026-08-11",
+  "assets": {
+    "directory": "./dist",
+    // Vercel も rewrite 無しの素の静的配信だったので未知パスは 404 のまま。
+    "not_found_handling": "404-page",
+  },
+  "observability": {
+    "enabled": true,
+  },
+}
