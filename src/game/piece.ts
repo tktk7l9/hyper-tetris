@@ -7,6 +7,7 @@ import {
   type DimMode,
 } from "../dims/coords.js";
 import {
+  normalizeOrigin,
   rotateAll,
   type RotationDir,
 } from "../dims/rotations.js";
@@ -27,19 +28,86 @@ export function spawnPiece(
   board: Board,
   dim: DimMode,
 ): ActivePiece {
-  // spawn near top of y axis, centered on x and z, w/v/u = 0
+  const blocks = orientToFit(proto.blocks, board.size, dim);
+  const { min, max } = blockBounds(blocks, dim);
   const origin: CellCoord = new Array(dim).fill(0);
-  origin[AXIS_X] = Math.floor(board.size[AXIS_X] / 2) - 1;
-  origin[AXIS_Z] = Math.floor(board.size[AXIS_Z] / 2) - 1;
-  origin[AXIS_Y] = board.size[AXIS_Y] - 1;
+  for (let axis = 0; axis < dim; axis++) {
+    const size = board.size[axis];
+    const lo = 0 - min[axis]; // "0 -" avoids -0 in origins
+    const hi = size - 1 - max[axis];
+    let want: number;
+    if (axis === AXIS_Y) {
+      // topmost block sits on the top row
+      want = hi;
+    } else if (axis === AXIS_X || axis === AXIS_Z) {
+      // historical spawn column; clamped so wide pieces stay inside narrow boards
+      want = Math.floor(size / 2) - 1;
+    } else {
+      // w / v / u: slice 0, where the view cursor starts and never follows the
+      // piece on its own. Centring here would spawn pieces out of sight.
+      want = 0 - min[axis];
+    }
+    origin[axis] = Math.min(hi, Math.max(lo, want));
+  }
   return {
     kindId: proto.kindId,
     colorHex: proto.colorHex,
     label: proto.label,
-    blocks: proto.blocks.map((b) => b.slice()),
+    blocks,
     origin,
     dim,
   };
+}
+
+function blockBounds(
+  blocks: CellCoord[],
+  dim: number,
+): { min: number[]; max: number[] } {
+  const min = new Array(dim).fill(Infinity);
+  const max = new Array(dim).fill(-Infinity);
+  for (const b of blocks) {
+    for (let i = 0; i < dim; i++) {
+      if (b[i] < min[i]) min[i] = b[i];
+      if (b[i] > max[i]) max[i] = b[i];
+    }
+  }
+  return { min, max };
+}
+
+function fitsExtents(blocks: CellCoord[], size: number[], dim: number): boolean {
+  const { min, max } = blockBounds(blocks, dim);
+  for (let i = 0; i < dim; i++) {
+    if (max[i] - min[i] + 1 > size[i]) return false;
+  }
+  return true;
+}
+
+/**
+ * Return a copy of `blocks` whose extent fits the board on every axis. A shape
+ * longer than an axis (e.g. the 4-long hyper-I on a 3-wide w/v/u axis) is
+ * turned a quarter into the first axis that can hold it: x, then z, then the
+ * other extra axes, and y (vertical) as a last resort.
+ */
+function orientToFit(
+  blocks: CellCoord[],
+  size: number[],
+  dim: number,
+): CellCoord[] {
+  if (fitsExtents(blocks, size, dim)) return blocks.map((b) => b.slice());
+  const { min, max } = blockBounds(blocks, dim);
+  const targets = [AXIS_X, AXIS_Z];
+  for (let i = 3; i < dim; i++) targets.push(i);
+  targets.push(AXIS_Y);
+  for (let axis = 0; axis < dim; axis++) {
+    if (max[axis] - min[axis] + 1 <= size[axis]) continue;
+    for (const target of targets) {
+      if (target === axis) continue;
+      const turned = normalizeOrigin(rotateAll(blocks, target, axis, 1)).blocks;
+      if (fitsExtents(turned, size, dim)) return turned;
+    }
+  }
+  // No quarter turn fits; unreachable for the shipped pieces and board sizes.
+  return blocks.map((b) => b.slice());
 }
 
 export function absoluteCells(piece: ActivePiece): CellCoord[] {
