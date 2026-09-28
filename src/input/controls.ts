@@ -4,7 +4,10 @@ import type { DimMode } from "../dims/coords.js";
 
 export interface ControlsHooks {
   onModeChange?: (mode: DimMode) => void;
-  onPause?: (paused: boolean) => void;
+  /** Player asked to toggle pause (P or the on-screen button). */
+  onPauseToggle?: () => void;
+  onEscape?: () => void;
+  onUndo?: () => void;
   onHardDrop?: () => void;
   onLineClear?: () => void;
   onHold?: (success: boolean) => void;
@@ -15,13 +18,22 @@ export interface ControlsHooks {
   onAudioToggle?: () => void;
   onAutoToggle?: () => void;
   onAnyKey?: () => void;
+  /** Runs right before a mode switch wipes the board (to offer undo). */
+  onBeforeReset?: () => void;
 }
+
+const ALWAYS_ACTIVE = new Set(["KeyR", "KeyH", "Slash", "Escape", "KeyU"]);
 
 export function attachControls(state: GameState, hooks: ControlsHooks = {}) {
   const handler = (ev: KeyboardEvent) => {
     if (ev.repeat && (ev.code === "Space" || ev.code === "Tab")) return;
-    // R restarts even when game-over; H toggles help anytime
-    if (state.gameOver && ev.code !== "KeyR" && ev.code !== "KeyH" && ev.code !== "Slash") return;
+    // R restarts even when game-over; H / Esc / U work anytime
+    if (state.gameOver && !ALWAYS_ACTIVE.has(ev.code)) {
+      // PLAY AGAIN takes focus on game over; a player still mashing Space
+      // (hard drop) must not restart by accident and lose the final score.
+      if (ev.code === "Space") ev.preventDefault();
+      return;
+    }
 
     hooks.onAnyKey?.();
     let consumed = true;
@@ -42,8 +54,13 @@ export function attachControls(state: GameState, hooks: ControlsHooks = {}) {
         hooks.onHold?.(state.swapHold());
         break;
       case "KeyP":
-        state.paused = !state.paused;
-        hooks.onPause?.(state.paused);
+        hooks.onPauseToggle?.();
+        break;
+      case "Escape":
+        hooks.onEscape?.();
+        break;
+      case "KeyU":
+        hooks.onUndo?.();
         break;
       case "KeyH":
       case "Slash":
@@ -89,6 +106,7 @@ export function attachControls(state: GameState, hooks: ControlsHooks = {}) {
 
 function switchMode(state: GameState, hooks: ControlsHooks, mode: DimMode) {
   if (state.mode === mode) return;
+  hooks.onBeforeReset?.();
   state.changeMode(mode);
   hooks.onModeChange?.(mode);
 }

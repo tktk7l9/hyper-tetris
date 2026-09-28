@@ -25,8 +25,7 @@ export function attachTouchControls(state: GameState, hooks: ControlsHooks = {})
       case "hard":  state.hardDrop(); hooks.onHardDrop?.(); break;
       case "hold":  hooks.onHold?.(state.swapHold()); break;
       case "pause":
-        state.paused = !state.paused;
-        hooks.onPause?.(state.paused);
+        hooks.onPauseToggle?.();
         break;
       case "rotate":
       case "rotateAlt": {
@@ -51,6 +50,7 @@ export function attachTouchControls(state: GameState, hooks: ControlsHooks = {})
       case "m6": {
         const m = parseInt(act.slice(1), 10) as DimMode;
         if (state.mode !== m) {
+          hooks.onBeforeReset?.();
           state.changeMode(m);
           hooks.onModeChange?.(m);
         }
@@ -99,7 +99,7 @@ export function attachTouchControls(state: GameState, hooks: ControlsHooks = {})
     btn.addEventListener("pointerleave", stop);
   }
 
-  /** Refresh button availability based on current dim/mode. */
+  /** Show only the slice buttons the current mode can use; mark the active mode. */
   const refresh = () => {
     const dim = state.mode;
     for (const btn of root.querySelectorAll<HTMLButtonElement>("#touch-slice .touch-btn")) {
@@ -107,11 +107,12 @@ export function attachTouchControls(state: GameState, hooks: ControlsHooks = {})
       const axis = axisStr ? parseInt(axisStr, 10) : -1;
       // axis 0 → w (needs dim ≥ 4), 1 → v (≥5), 2 → u (≥6)
       const needed = 4 + axis;
-      btn.toggleAttribute("disabled", dim < needed);
+      btn.hidden = dim < needed;
     }
     for (const btn of root.querySelectorAll<HTMLButtonElement>("#touch-mode .touch-btn")) {
       const m = parseInt((btn.dataset.act ?? "m3").slice(1), 10);
       btn.classList.toggle("active", state.mode === m);
+      btn.setAttribute("aria-pressed", String(state.mode === m));
     }
   };
   refresh();

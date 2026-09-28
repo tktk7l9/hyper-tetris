@@ -11,6 +11,8 @@ import { attachTouchControls } from "./input/touch.js";
 import { GRAVITY_AXIS, type DimMode } from "./dims/coords.js";
 import { AudioEngine } from "./audio/audio.js";
 import { AutoPilot } from "./ai/autopilot.js";
+import { PauseController } from "./game/pause.js";
+import type { GameSnapshot } from "./game/state.js";
 
 const app = document.getElementById("app");
 if (!app) throw new Error("#app missing");
@@ -31,23 +33,17 @@ const fx = new EffectsLayer();
 ctx.scene.add(fx.group);
 
 const hud = new Hud();
+const pause = new PauseController(state);
 const audio = new AudioEngine();
 const autopilot = new AutoPilot();
 
 function refreshStatus() {
   hud.setStatus({
     audio: audio.bgmEnabled || audio.sfxEnabled,
-    bgm: audio.bgmEnabled,
     auto: autopilot.enabled,
   });
 }
 refreshStatus();
-
-hud.onRestart(() => {
-  state.reset(state.mode);
-  hud.setGameOver(false);
-  audio.playSfx("mode");
-});
 
 function syncBoardForMode() {
   view.resizeForBoard(state.board.size);
@@ -76,55 +72,139 @@ const modeNames: Record<DimMode, string> = { 3: "3D", 4: "4D", 5: "5D", 6: "6D" 
 
 let touch: ReturnType<typeof attachTouchControls> | undefined;
 
+// --- fail-safe restart / mode switch: keep the last game for a few seconds ---
+const UNDO_MS = 6000;
+let undoSnap: GameSnapshot | null = null;
+
+function rememberForUndo() {
+  undoSnap = !state.gameOver && state.hasProgress() ? state.snapshot() : null;
+}
+
+function offerUndo(label: string) {
+  if (!undoSnap) {
+    hud.hideUndo();
+    return;
+  }
+  hud.showUndo(label, UNDO_MS, () => {
+    undoSnap = null;
+  });
+}
+
+function undo() {
+  if (!undoSnap) return;
+  const prev = state.mode;
+  state.restore(undoSnap);
+  undoSnap = null;
+  hud.hideUndo();
+  if (state.mode !== prev) {
+    syncBoardForMode();
+    rebuildKindColors();
+    touch?.refresh();
+  }
+  pause.afterReset();
+  hud.setGameOver(false);
+  hud.showToast("UNDONE", 700);
+  audio.playSfx("mode");
+}
+
+function restart() {
+  rememberForUndo();
+  state.reset(state.mode);
+  pause.afterReset();
+  hud.setGameOver(false);
+  hud.showToast("RESTART", 700);
+  audio.playSfx("mode");
+  offerUndo("Game restarted");
+}
+
+function togglePause() {
+  if (state.gameOver) return;
+  const paused = pause.togglePause();
+  if (!paused) hud.showToast("GO", 700);
+  audio.playSfx("hold");
+}
+
+function toggleHelp() {
+  pause.toggleHelp();
+  hud.setHelp(pause.helpOpen);
+}
+
+function closeHelp() {
+  pause.closeHelp();
+  hud.setHelp(false);
+}
+
+function toggleAudio() {
+  audio.init();
+  audio.resume();
+  const on = !(audio.bgmEnabled && audio.sfxEnabled);
+  audio.setBgmEnabled(on);
+  audio.setSfxEnabled(on);
+  refreshStatus();
+  hud.showToast(on ? "AUDIO ON" : "AUDIO OFF", 700);
+}
+
+function toggleAuto() {
+  const on = autopilot.toggle();
+  refreshStatus();
+  hud.showToast(on ? "AUTO ON" : "AUTO OFF", 700);
+  audio.playSfx("hold");
+}
+
 const hooks: ControlsHooks = {
   onAnyKey: () => {
     audio.init();
     audio.resume();
   },
+  onBeforeReset: rememberForUndo,
   onModeChange: (mode) => {
     syncBoardForMode();
     rebuildKindColors();
+    pause.afterReset();
     hud.showToast(`MODE ${modeNames[mode]}`, 1300);
     hud.setGameOver(false);
     audio.playSfx("mode");
     touch?.refresh();
+    offerUndo(`Switched to ${modeNames[mode]} — new game`);
   },
-  onPause: (paused) => {
-    if (!paused) hud.showToast("GO", 700);
-    audio.playSfx("hold");
+  onPauseToggle: togglePause,
+  onEscape: () => {
+    const result = pause.escape();
+    hud.setHelp(pause.helpOpen);
+    if (result === "resumed") hud.showToast("GO", 700);
   },
+  onUndo: undo,
   onHardDrop: () => {
     audio.playSfx("drop");
   },
   onMove: () => audio.playSfx("move"),
   onRotate: () => audio.playSfx("rotate"),
   onHold: (ok) => {
-    hud.showToast(ok ? "HOLD" : "HOLD ×", ok ? 600 : 500);
+    hud.showToast(ok ? "HOLD" : "HOLD USED", ok ? 600 : 700);
     if (ok) audio.playSfx("hold");
   },
-  onHelpToggle: () => hud.toggleHelp(),
-  onRestart: () => {
-    state.reset(state.mode);
-    hud.setGameOver(false);
-    hud.showToast("RESTART", 700);
-    audio.playSfx("mode");
-  },
-  onAudioToggle: () => {
-    audio.init();
-    audio.resume();
-    const on = !(audio.bgmEnabled && audio.sfxEnabled);
-    audio.setBgmEnabled(on);
-    audio.setSfxEnabled(on);
-    refreshStatus();
-    hud.showToast(on ? "AUDIO ON" : "AUDIO OFF", 700);
-  },
-  onAutoToggle: () => {
-    const on = autopilot.toggle();
-    refreshStatus();
-    hud.showToast(on ? "AUTO ON" : "AUTO OFF", 700);
-    audio.playSfx("hold");
-  },
+  onHelpToggle: toggleHelp,
+  onRestart: restart,
+  onAudioToggle: toggleAudio,
+  onAutoToggle: toggleAuto,
 };
+
+hud.bind({
+  onHelpToggle: toggleHelp,
+  onHelpClose: closeHelp,
+  onResume: togglePause,
+  onRestart: restart,
+  onUndo: undo,
+  onAudioToggle: toggleAudio,
+  onAutoToggle: toggleAuto,
+});
+
+// Leaving the tab or window pauses the game so the player comes back on
+// their own terms.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") pause.suspend();
+});
+window.addEventListener("blur", () => pause.suspend());
 
 attachControls(state, hooks);
 touch = attachTouchControls(state, hooks);
@@ -185,7 +265,7 @@ function frame(t: number) {
   view.update(state, (k) => kindColorMap.get(k) ?? 0xffffff);
   fx.update(dt);
   ctx.background.update(dt);
-  hud.update(state);
+  hud.update(state, pause.helpOpen);
 
   if (state.gameOver) {
     hud.setGameOver(true, state.stats.score);

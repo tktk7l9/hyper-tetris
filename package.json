@@ -8,15 +8,19 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "deploy": "npm run build && wrangler deploy",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "three": "^0.186.0"
   },
   "devDependencies": {
     "@types/three": "^0.186.0",
+    "@vitest/coverage-v8": "^4.1.11",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",
+    "vitest": "^4.1.11",
     "wrangler": "^4.135.0"
   }
 }

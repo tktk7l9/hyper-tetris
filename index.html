@@ -75,7 +75,21 @@
       }
       #panel-stats { top: 16px; left: 16px; min-width: 200px; }
       #panel-mode  { top: 16px; right: 16px; min-width: 220px; text-align: right; }
-      #panel-keys  { bottom: 16px; left: 16px; max-width: 320px; font-size: 12px; opacity: 0.9; }
+      #panel-keys  { bottom: 16px; left: 16px; max-width: 320px; font-size: 12px; opacity: 0.9; pointer-events: auto; }
+      #panel-keys summary {
+        cursor: pointer;
+        list-style: none;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--accent);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      #panel-keys summary::-webkit-details-marker { display: none; }
+      #panel-keys summary::after { content: " ▸"; opacity: 0.7; }
+      #panel-keys[open] summary::after { content: " ▾"; }
+      #panel-keys[open] summary { margin-bottom: 6px; }
+      #panel-mini[hidden] { display: none; }
       #panel-mini  { bottom: 16px; right: 16px; }
       #panel-hold  { top: 160px; left: 16px; width: 160px; text-align: center; }
       #panel-next  { top: 160px; right: 16px; width: 160px; text-align: center; }
@@ -137,6 +151,7 @@
       #gameover, #help-overlay, #pause-overlay {
         position: absolute;
         inset: 0;
+        z-index: 20;
         background: rgba(2, 4, 12, 0.78);
         display: none;
         flex-direction: column;
@@ -167,6 +182,21 @@
         letter-spacing: 0.2em;
         text-transform: uppercase;
       }
+      #help-overlay {
+        justify-content: safe center;
+        overflow-y: auto;
+        padding: 24px 16px;
+      }
+      #pause-overlay .pause-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+      }
+      #pause-resume {
+        min-width: 200px;
+        padding: 14px 32px !important;
+        font-size: 16px !important;
+      }
       #help-overlay h1 {
         font-size: 36px;
         margin: 0;
@@ -187,7 +217,7 @@
         letter-spacing: 0.16em;
         text-transform: uppercase;
       }
-      #gameover button, #help-overlay button {
+      #gameover button, #help-overlay button, #pause-overlay button {
         background: transparent;
         color: var(--accent);
         border: 1px solid var(--accent);
@@ -197,7 +227,48 @@
         cursor: pointer;
         border-radius: 6px;
       }
-      #gameover button:hover, #help-overlay button:hover { background: rgba(92,242,255,0.12); }
+      #gameover button:hover, #help-overlay button:hover, #pause-overlay button:hover { background: rgba(92,242,255,0.12); }
+      #pause-overlay .pause-secondary button {
+        color: var(--fg);
+        border-color: rgba(231,234,246,0.35);
+        font-size: 12px;
+        padding: 8px 18px;
+      }
+      button:focus-visible, summary:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+      #undo-bar {
+        position: absolute;
+        left: 50%;
+        bottom: 24px;
+        transform: translateX(-50%);
+        z-index: 30;
+        display: none;
+        align-items: center;
+        gap: 14px;
+        padding: 8px 8px 8px 16px;
+        border-radius: 999px;
+        background: rgba(10,14,32,0.92);
+        border: 1px solid rgba(255,184,107,0.6);
+        font-size: 13px;
+        pointer-events: auto;
+        white-space: nowrap;
+      }
+      #undo-bar.show { display: flex; }
+      #undo-btn {
+        background: rgba(255,184,107,0.16);
+        color: var(--warn);
+        border: 1px solid var(--warn);
+        border-radius: 999px;
+        padding: 6px 16px;
+        min-height: 32px;
+        font-size: 12px;
+        letter-spacing: 0.16em;
+        font-family: inherit;
+        cursor: pointer;
+      }
+      .only-touch { display: none; }
       #help-fab {
         position: absolute;
         top: 16px;
@@ -222,9 +293,11 @@
         transform: translateX(-50%) translateY(36px);
         display: flex;
         gap: 6px;
-        pointer-events: none;
+        pointer-events: auto;
       }
       .status-pill {
+        cursor: pointer;
+        color: inherit;
         font-size: 12px;
         letter-spacing: 0.18em;
         padding: 3px 10px;
@@ -270,10 +343,7 @@
         background: rgba(92,242,255,0.32);
         border-color: var(--accent);
       }
-      .touch-btn[disabled] {
-        opacity: 0.3;
-        pointer-events: none;
-      }
+      .touch-btn[hidden] { display: none; }
       #touch-dpad {
         position: absolute;
         bottom: max(20px, env(safe-area-inset-bottom));
@@ -334,7 +404,7 @@
 
       #touch-mode {
         position: absolute;
-        top: max(56px, env(safe-area-inset-top));
+        top: calc(max(12px, env(safe-area-inset-top)) + 76px);
         left: 50%;
         transform: translateX(-50%);
         display: flex;
@@ -384,24 +454,33 @@
         #panel-hold canvas, #panel-next canvas { width: 64px; height: 48px; }
         #panel-hold h2, #panel-next h2 { font-size: 12px; margin-bottom: 2px; }
         #panel-hold .preview-label, #panel-next .preview-label { font-size: 12px; }
+        #panel-mini { padding: 6px; }
+        #status-bar { top: max(12px, env(safe-area-inset-top)); transform: translateX(-50%) translateY(34px); }
+        .status-pill { min-height: 28px; padding: 4px 8px; font-size: 11px; letter-spacing: 0.04em; white-space: nowrap; }
+        #help-fab { top: max(12px, env(safe-area-inset-top)); }
         #panel-mini {
-          right: 8px;
-          bottom: 8px;
-          padding: 6px;
-          transform: scale(0.78);
-          transform-origin: bottom right;
+          right: auto;
+          left: 8px;
+          bottom: auto;
+          top: 50%;
+          transform: translateY(-50%) scale(0.7);
+          transform-origin: left center;
         }
-        #status-bar { transform: translateX(-50%) translateY(28px) scale(0.85); }
-        #help-fab { font-size: 12px; padding: 5px 10px; }
+        #undo-bar { bottom: auto; top: calc(max(12px, env(safe-area-inset-top)) + 116px); }
+        #help-fab { font-size: 12px; padding: 5px 10px; min-height: 28px; }
         #toast { font-size: 24px; }
+      }
+
+      /* Key hints follow the input device, not the window width: a narrow
+         desktop window still has a keyboard and no touch screen. */
+      @media (pointer: coarse) {
+        .only-touch { display: inline; }
+        .only-keys { display: none; }
       }
 
       /* Very narrow / portrait phones */
       @media (max-width: 480px) {
         #panel-hold, #panel-next { display: none; }
-        #panel-mini {
-          transform: scale(0.7);
-        }
       }
 
       /* Start screen */
@@ -449,6 +528,11 @@
         opacity: 0.5;
         letter-spacing: 0.2em;
       }
+      @media (max-width: 600px) {
+        #help-overlay h1 { font-size: 24px; letter-spacing: 0.1em; text-align: center; }
+        #help-overlay .help-grid { grid-template-columns: 1fr; gap: 12px; }
+        #pause-overlay h1 { font-size: 44px; letter-spacing: 0.2em; }
+      }
       @media (max-width: 480px) {
         .start-title { font-size: 42px; letter-spacing: 0.1em; }
         .start-sub { font-size: 14px; }
@@ -462,7 +546,7 @@
           <h1 class="start-title">HYPER TETRIS</h1>
           <p class="start-sub">3D / 4D / 5D / 6D</p>
           <button id="start-btn" type="button">START GAME</button>
-          <p class="start-hint">or press any key</p>
+          <p class="start-hint"><span class="only-keys">or press any key</span><span class="only-touch">or tap anywhere</span></p>
         </div>
         <div id="panel-stats" class="panel">
           <h2>Stats</h2>
@@ -486,8 +570,8 @@
           <canvas id="next-canvas" class="preview-canvas" width="140" height="100"></canvas>
           <div class="preview-label" id="next-label">—</div>
         </div>
-        <div id="panel-keys" class="panel">
-          <h2>Keys</h2>
+        <details id="panel-keys" class="panel" open>
+          <summary>Keys</summary>
           <div class="keymap">
             <div class="keymap-section">Move</div>
             <kbd>← →</kbd><span>x axis</span>
@@ -511,16 +595,21 @@
             <kbd>O</kbd><span>auto-play (AI)</span>
             <kbd>M</kbd><span>mute audio</span>
             <kbd>H · ?</kbd><span>help overlay</span>
+            <kbd>Esc</kbd><span>close help / pause</span>
+            <kbd>U</kbd><span>undo restart / mode switch</span>
           </div>
-        </div>
+        </details>
         <div id="panel-mini" class="panel">
           <h2>Hyper Map</h2>
-          <canvas id="minimap" width="128" height="128"></canvas>
+          <canvas id="minimap" width="128" height="128" role="img" aria-label="Map of higher-dimension slices; the yellow frame is the slice you are playing"></canvas>
         </div>
         <button id="help-fab" type="button">? HELP</button>
-        <div id="status-bar"></div>
+        <div id="status-bar">
+          <button id="status-audio" class="status-pill on" type="button" aria-pressed="true">♪ AUDIO ON</button>
+          <button id="status-auto" class="status-pill off" type="button" aria-pressed="false">⚙ AUTO OFF</button>
+        </div>
         <div id="touch-controls">
-          <div id="touch-mode">
+          <div id="touch-mode" role="group" aria-label="Dimension (switching starts a new game)">
             <button class="touch-btn" type="button" data-act="m3">3D</button>
             <button class="touch-btn" type="button" data-act="m4">4D</button>
             <button class="touch-btn" type="button" data-act="m5">5D</button>
@@ -535,27 +624,36 @@
             <button class="touch-btn" type="button" data-act="u-" data-axis="2">u−</button>
           </div>
           <div id="touch-dpad">
-            <button class="touch-btn" type="button" data-act="up">▲</button>
-            <button class="touch-btn" type="button" data-act="left">◀</button>
-            <button class="touch-btn" type="button" data-act="soft">SOFT</button>
-            <button class="touch-btn" type="button" data-act="right">▶</button>
-            <button class="touch-btn" type="button" data-act="down">▼</button>
+            <button class="touch-btn" type="button" data-act="up" aria-label="Move back">▲</button>
+            <button class="touch-btn" type="button" data-act="left" aria-label="Move left">◀</button>
+            <button class="touch-btn" type="button" data-act="soft" aria-label="Soft drop">SOFT</button>
+            <button class="touch-btn" type="button" data-act="right" aria-label="Move right">▶</button>
+            <button class="touch-btn" type="button" data-act="down" aria-label="Move forward">▼</button>
           </div>
           <div id="touch-actions">
-            <button class="touch-btn" type="button" data-act="rotateAlt">↺</button>
-            <button class="touch-btn" type="button" data-act="rotate">↻</button>
+            <button class="touch-btn" type="button" data-act="rotateAlt" aria-label="Rotate counter-clockwise">↺</button>
+            <button class="touch-btn" type="button" data-act="rotate" aria-label="Rotate clockwise">↻</button>
             <button class="touch-btn" type="button" data-act="hold">HOLD</button>
-            <button class="touch-btn" type="button" data-act="pause">⏸</button>
+            <button class="touch-btn" type="button" data-act="pause" aria-label="Pause">⏸</button>
             <button class="touch-btn" type="button" data-act="hard">HARD DROP</button>
           </div>
         </div>
-        <div id="toast"></div>
-        <div id="pause-overlay">
-          <h1>PAUSED</h1>
-          <div class="hint">press <kbd style="background:rgba(92,242,255,0.15);border:1px solid rgba(92,242,255,0.35);padding:2px 8px;border-radius:4px;">P</kbd> to resume</div>
+        <div id="toast" role="status" aria-live="polite"></div>
+        <div id="undo-bar" role="status" aria-live="polite">
+          <span id="undo-text"></span>
+          <button id="undo-btn" type="button">UNDO<span class="only-keys"> (U)</span></button>
         </div>
-        <div id="help-overlay">
-          <h1>HYPER TETRIS — GUIDE</h1>
+        <div id="pause-overlay" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+          <h1 id="pause-title">PAUSED</h1>
+          <button id="pause-resume" type="button">RESUME</button>
+          <div class="hint only-keys">or press <kbd style="background:rgba(92,242,255,0.15);border:1px solid rgba(92,242,255,0.35);padding:2px 8px;border-radius:4px;">P</kbd> / <kbd style="background:rgba(92,242,255,0.15);border:1px solid rgba(92,242,255,0.35);padding:2px 8px;border-radius:4px;">Esc</kbd></div>
+          <div class="pause-actions pause-secondary">
+            <button id="pause-help" type="button">HELP</button>
+            <button id="pause-restart" type="button">RESTART</button>
+          </div>
+        </div>
+        <div id="help-overlay" role="dialog" aria-modal="true" aria-labelledby="help-title">
+          <h1 id="help-title">HYPER TETRIS — GUIDE</h1>
           <div class="help-grid">
             <div>
               <h3>What's a slice?</h3>
@@ -571,15 +669,15 @@
             </div>
             <div>
               <h3>Camera</h3>
-              <p style="opacity:0.85;line-height:1.6;">Drag with the mouse to orbit, scroll to zoom. The camera auto-centers when you switch modes.</p>
+              <p style="opacity:0.85;line-height:1.6;"><span class="only-keys">Drag with the mouse to orbit, scroll to zoom.</span><span class="only-touch">Drag the view with one finger to orbit, pinch to zoom.</span> The camera auto-centers when you switch modes. The game pauses while this guide is open.</p>
             </div>
           </div>
-          <button id="help-close" type="button">CLOSE (H)</button>
+          <button id="help-close" type="button">CLOSE<span class="only-keys"> (Esc)</span></button>
         </div>
-        <div id="gameover">
-          <h1>GAME OVER</h1>
+        <div id="gameover" role="dialog" aria-modal="true" aria-labelledby="gameover-title">
+          <h1 id="gameover-title">GAME OVER</h1>
           <div id="final-score" style="font-size: 18px; opacity: 0.8;"></div>
-          <button id="restart-btn">RESTART</button>
+          <button id="restart-btn" type="button">PLAY AGAIN<span class="only-keys"> (R)</span></button>
         </div>
       </div>
     </div>
