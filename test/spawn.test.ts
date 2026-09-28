@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BOARD_SIZES, GRAVITY_AXIS, type DimMode } from "../dims/coords.js";
-import { piecesFor } from "../dims/pieces.js";
-import { Board } from "./board.js";
-import { absoluteCells, collides, spawnPiece, tryRotate } from "./piece.js";
-import { rotationPlanesFor } from "../dims/rotations.js";
-import { GameState } from "./state.js";
+import { BOARD_SIZES, GRAVITY_AXIS, type DimMode } from "../src/dims/coords.js";
+import { piecesFor } from "../src/dims/pieces.js";
+import { Board } from "../src/game/board.js";
+import { absoluteCells, collides, spawnPiece, tryRotate } from "../src/game/piece.js";
+import { rotationPlanesFor } from "../src/dims/rotations.js";
+import { GameState } from "../src/game/state.js";
 
 const DIMS: DimMode[] = [3, 4, 5, 6];
 
