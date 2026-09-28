@@ -28,7 +28,12 @@ export function attachControls(state: GameState, hooks: ControlsHooks = {}) {
   const handler = (ev: KeyboardEvent) => {
     if (ev.repeat && (ev.code === "Space" || ev.code === "Tab")) return;
     // R restarts even when game-over; H / Esc / U work anytime
-    if (state.gameOver && !ALWAYS_ACTIVE.has(ev.code)) return;
+    if (state.gameOver && !ALWAYS_ACTIVE.has(ev.code)) {
+      // PLAY AGAIN takes focus on game over; a player still mashing Space
+      // (hard drop) must not restart by accident and lose the final score.
+      if (ev.code === "Space") ev.preventDefault();
+      return;
+    }
 
     hooks.onAnyKey?.();
     let consumed = true;

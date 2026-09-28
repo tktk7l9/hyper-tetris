@@ -54,4 +54,18 @@ describe("keyboard controls", () => {
     expect(hooks.onUndo).toHaveBeenCalledOnce();
     expect(hooks.onPauseToggle).not.toHaveBeenCalled();
   });
+
+  it("swallows Space after game over so it cannot press the focused PLAY AGAIN button", () => {
+    state.gameOver = true;
+    const cells = Array.from(state.board.cells);
+    const ev = press("Space");
+    expect(ev.defaultPrevented).toBe(true);
+    expect(Array.from(state.board.cells)).toEqual(cells);
+  });
+
+  it("leaves other keys alone after game over (Enter still activates the focused button)", () => {
+    state.gameOver = true;
+    expect(press("Enter").defaultPrevented).toBe(false);
+    expect(press("ArrowLeft").defaultPrevented).toBe(false);
+  });
 });

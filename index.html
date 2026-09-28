@@ -467,10 +467,15 @@
           transform-origin: left center;
         }
         #undo-bar { bottom: auto; top: calc(max(12px, env(safe-area-inset-top)) + 116px); }
+        #help-fab { font-size: 12px; padding: 5px 10px; min-height: 28px; }
+        #toast { font-size: 24px; }
+      }
+
+      /* Key hints follow the input device, not the window width: a narrow
+         desktop window still has a keyboard and no touch screen. */
+      @media (pointer: coarse) {
         .only-touch { display: inline; }
         .only-keys { display: none; }
-        #help-fab { font-size: 12px; padding: 5px 10px; }
-        #toast { font-size: 24px; }
       }
 
       /* Very narrow / portrait phones */
