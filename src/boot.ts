@@ -10,6 +10,13 @@ if (import.meta.env.PROD) {
   document.head.appendChild(beacon);
 }
 
+// The key list only fits beside the Hold panel on tall screens; elsewhere it
+// starts collapsed and the player can open it.
+const keysPanel = document.getElementById("panel-keys");
+if (keysPanel instanceof HTMLDetailsElement && window.innerHeight < 940) {
+  keysPanel.open = false;
+}
+
 let started = false;
 
 async function startGame() {

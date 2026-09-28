@@ -18,7 +18,17 @@ export class Hud {
   private btnRestart: HTMLButtonElement;
   private btnHelpClose: HTMLButtonElement;
   private btnHelpFab: HTMLButtonElement;
-  private elStatus: HTMLElement;
+  private btnResume: HTMLButtonElement;
+  private btnPauseHelp: HTMLButtonElement;
+  private btnPauseRestart: HTMLButtonElement;
+  private btnAudio: HTMLButtonElement;
+  private btnAuto: HTMLButtonElement;
+  private elUndo: HTMLElement;
+  private elUndoText: HTMLElement;
+  private btnUndo: HTMLButtonElement;
+  private elMiniPanel: HTMLElement;
+  private undoTimeout: number | null = null;
+  private undoExpire: (() => void) | null = null;
   private elHoldLabel: HTMLElement;
   private elNextLabel: HTMLElement;
   private mini: HTMLCanvasElement;
@@ -44,7 +54,15 @@ export class Hud {
     this.btnRestart = byId("restart-btn") as HTMLButtonElement;
     this.btnHelpClose = byId("help-close") as HTMLButtonElement;
     this.btnHelpFab = byId("help-fab") as HTMLButtonElement;
-    this.elStatus = byId("status-bar");
+    this.btnResume = byId("pause-resume") as HTMLButtonElement;
+    this.btnPauseHelp = byId("pause-help") as HTMLButtonElement;
+    this.btnPauseRestart = byId("pause-restart") as HTMLButtonElement;
+    this.btnAudio = byId("status-audio") as HTMLButtonElement;
+    this.btnAuto = byId("status-auto") as HTMLButtonElement;
+    this.elUndo = byId("undo-bar");
+    this.elUndoText = byId("undo-text");
+    this.btnUndo = byId("undo-btn") as HTMLButtonElement;
+    this.elMiniPanel = byId("panel-mini");
     this.elHoldLabel = byId("hold-label");
     this.elNextLabel = byId("next-label");
     this.mini = byId("minimap") as HTMLCanvasElement;
@@ -54,12 +72,57 @@ export class Hud {
     this.holdCtx = required2d(this.holdCanvas);
     this.nextCtx = required2d(this.nextCanvas);
 
-    this.btnHelpClose.addEventListener("click", () => this.toggleHelp(false));
-    this.btnHelpFab.addEventListener("click", () => this.toggleHelp());
+    // A mouse / touch click must not leave focus on a HUD button, otherwise
+    // Space (hard drop) would also re-activate that button.
+    document.addEventListener("click", (e) => {
+      if (e.detail === 0) return;
+      const btn = (e.target as Element | null)?.closest?.("button");
+      if (btn instanceof HTMLButtonElement) btn.blur();
+    });
   }
 
-  onRestart(fn: () => void) {
-    this.btnRestart.addEventListener("click", fn);
+  bind(handlers: {
+    onHelpToggle: () => void;
+    onHelpClose: () => void;
+    onResume: () => void;
+    onRestart: () => void;
+    onUndo: () => void;
+    onAudioToggle: () => void;
+    onAutoToggle: () => void;
+  }) {
+    this.btnHelpFab.addEventListener("click", handlers.onHelpToggle);
+    this.btnPauseHelp.addEventListener("click", handlers.onHelpToggle);
+    this.btnHelpClose.addEventListener("click", handlers.onHelpClose);
+    this.btnResume.addEventListener("click", handlers.onResume);
+    this.btnRestart.addEventListener("click", handlers.onRestart);
+    this.btnPauseRestart.addEventListener("click", handlers.onRestart);
+    this.btnUndo.addEventListener("click", handlers.onUndo);
+    this.btnAudio.addEventListener("click", handlers.onAudioToggle);
+    this.btnAuto.addEventListener("click", handlers.onAutoToggle);
+  }
+
+  /** Show a short-lived "undo" offer. onExpire runs when it times out. */
+  showUndo(text: string, ms: number, onExpire: () => void) {
+    this.clearUndoTimer();
+    this.elUndoText.textContent = text;
+    this.elUndo.classList.add("show");
+    this.undoExpire = onExpire;
+    this.undoTimeout = window.setTimeout(() => {
+      const expire = this.undoExpire;
+      this.hideUndo();
+      expire?.();
+    }, ms);
+  }
+
+  hideUndo() {
+    this.clearUndoTimer();
+    this.undoExpire = null;
+    this.elUndo.classList.remove("show");
+  }
+
+  private clearUndoTimer() {
+    if (this.undoTimeout != null) clearTimeout(this.undoTimeout);
+    this.undoTimeout = null;
   }
 
   showToast(text: string, ms = 1100) {
@@ -73,7 +136,10 @@ export class Hud {
 
   setGameOver(visible: boolean, score = 0) {
     if (visible) {
-      this.elGameOver.classList.add("show");
+      if (!this.elGameOver.classList.contains("show")) {
+        this.elGameOver.classList.add("show");
+        this.btnRestart.focus({ preventScroll: true });
+      }
       this.elFinal.textContent = `final score: ${score}`;
     } else {
       this.elGameOver.classList.remove("show");
@@ -81,26 +147,24 @@ export class Hud {
   }
 
   setPaused(visible: boolean) {
+    const was = this.elPause.classList.contains("show");
     this.elPause.classList.toggle("show", visible);
+    if (visible && !was) this.btnResume.focus({ preventScroll: true });
   }
 
-  toggleHelp(force?: boolean) {
-    const willShow = force ?? !this.elHelp.classList.contains("show");
-    this.elHelp.classList.toggle("show", willShow);
+  setHelp(open: boolean) {
+    const was = this.elHelp.classList.contains("show");
+    this.elHelp.classList.toggle("show", open);
+    if (open && !was) this.btnHelpClose.focus({ preventScroll: true });
+    if (!open && was) this.btnHelpClose.blur();
   }
 
-  isHelpOpen(): boolean {
-    return this.elHelp.classList.contains("show");
+  setStatus(flags: { audio: boolean; auto: boolean }) {
+    setPill(this.btnAudio, "♪ AUDIO", flags.audio);
+    setPill(this.btnAuto, "⚙ AUTO", flags.auto);
   }
 
-  setStatus(flags: { audio: boolean; bgm: boolean; auto: boolean }) {
-    const parts: string[] = [];
-    parts.push(`<span class="status-pill ${flags.audio ? "on" : "off"}">♪ AUDIO ${flags.audio ? "ON" : "OFF"}</span>`);
-    parts.push(`<span class="status-pill ${flags.auto ? "on" : "off"}">⚙ AUTO ${flags.auto ? "ON" : "OFF"}</span>`);
-    this.elStatus.innerHTML = parts.join("");
-  }
-
-  update(state: GameState) {
+  update(state: GameState, helpOpen = false) {
     this.elScore.textContent = state.stats.score.toString();
     this.elLevel.textContent = state.stats.level.toString();
     this.elLines.textContent = state.stats.lines.toString();
@@ -118,7 +182,8 @@ export class Hud {
     this.drawMinimap(state);
     this.drawNext(state);
     this.drawHold(state);
-    this.setPaused(state.paused && !state.gameOver);
+    this.elMiniPanel.hidden = state.mode === 3;
+    this.setPaused(state.paused && !state.gameOver && !helpOpen);
   }
 
   // --- next / hold preview ---
@@ -318,6 +383,13 @@ export class Hud {
       ctx.fillText("u", W - 4, 22);
     }
   }
+}
+
+function setPill(btn: HTMLButtonElement, label: string, on: boolean) {
+  btn.textContent = `${label} ${on ? "ON" : "OFF"}`;
+  btn.classList.toggle("on", on);
+  btn.classList.toggle("off", !on);
+  btn.setAttribute("aria-pressed", String(on));
 }
 
 function byId(id: string): HTMLElement {

@@ -24,6 +24,25 @@ export interface GameStats {
   combo: number;
 }
 
+/** Deep copy of everything needed to bring a game back (used for undo). */
+export interface GameSnapshot {
+  mode: DimMode;
+  cells: Uint8Array;
+  current: ActivePiece | null;
+  next: PiecePrototype;
+  hold: PiecePrototype | null;
+  holdLocked: boolean;
+  stats: GameStats;
+  slice: number[];
+  dropTimer: number;
+  lockTimer: number;
+}
+
+function clonePiece(p: ActivePiece | null): ActivePiece | null {
+  if (!p) return null;
+  return { ...p, blocks: p.blocks.map((b) => b.slice()), origin: p.origin.slice() };
+}
+
 export class GameState {
   public mode: DimMode;
   public board: Board;
@@ -65,6 +84,44 @@ export class GameState {
     this.hold = null;
     this.holdLocked = false;
     this.spawnNext();
+  }
+
+  /** True once the player has something worth keeping (score or blocks). */
+  hasProgress(): boolean {
+    if (this.stats.score > 0 || this.stats.lines > 0) return true;
+    return this.board.cells.some((v) => v !== 0);
+  }
+
+  snapshot(): GameSnapshot {
+    return {
+      mode: this.mode,
+      cells: this.board.cells.slice(),
+      current: clonePiece(this.current),
+      next: this.next,
+      hold: this.hold,
+      holdLocked: this.holdLocked,
+      stats: { ...this.stats },
+      slice: this.slice.values.slice(),
+      dropTimer: this.dropTimer,
+      lockTimer: this.lockTimer,
+    };
+  }
+
+  restore(snap: GameSnapshot): void {
+    this.mode = snap.mode;
+    this.board = new Board(snap.mode, BOARD_SIZES[snap.mode]);
+    this.board.cells.set(snap.cells);
+    this.current = clonePiece(snap.current);
+    this.next = snap.next;
+    this.hold = snap.hold;
+    this.holdLocked = snap.holdLocked;
+    this.stats = { ...snap.stats };
+    this.slice = { values: snap.slice.slice() };
+    this.dropTimer = snap.dropTimer;
+    this.lockTimer = snap.lockTimer;
+    this.lastClears = [];
+    this.paused = false;
+    this.gameOver = false;
   }
 
   spawnNext(): void {
