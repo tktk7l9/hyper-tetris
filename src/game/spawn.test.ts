@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { BOARD_SIZES, GRAVITY_AXIS, type DimMode } from "../dims/coords.js";
 import { piecesFor } from "../dims/pieces.js";
 import { Board } from "./board.js";
-import { absoluteCells, collides, spawnPiece } from "./piece.js";
+import { absoluteCells, collides, spawnPiece, tryRotate } from "./piece.js";
+import { rotationPlanesFor } from "../dims/rotations.js";
 import { GameState } from "./state.js";
 
 const DIMS: DimMode[] = [3, 4, 5, 6];
@@ -33,12 +34,19 @@ describe("spawnPiece", () => {
         const { min, max } = extents(cells, dim);
         // the piece touches the top row, as before
         expect(max[GRAVITY_AXIS]).toBe(board.size[GRAVITY_AXIS] - 1);
-        // extra axes (w, v, u): centred, i.e. free space on each side differs by at most 1
+        // extra axes (w, v, u): the piece starts in slice 0, where the view cursor
+        // starts, so at least one cell is visible in the main well
         for (let axis = 3; axis < dim; axis++) {
-          const below = min[axis];
-          const above = board.size[axis] - 1 - max[axis];
-          expect(Math.abs(below - above), `axis ${axis}`).toBeLessThanOrEqual(1);
+          expect(min[axis], `axis ${axis}`).toBe(0);
         }
+        expect(cells.some((c) => c.slice(3).every((v) => v === 0))).toBe(true);
+
+        // right after spawn the piece is not wedged against a wall: it can turn
+        // in at least one plane
+        const turns = rotationPlanesFor(dim).filter((p) =>
+          tryRotate(piece, p.axisA, p.axisB, 1, board),
+        );
+        expect(turns.length).toBeGreaterThan(0);
       });
     }
   }
@@ -49,6 +57,15 @@ describe("spawnPiece", () => {
       const piece = spawnPiece(proto, board, 3);
       expect(piece.origin).toEqual([4, 19, 4]);
       expect(piece.blocks).toEqual(proto.blocks);
+    }
+  });
+
+  it("keeps the 4D spawn position unchanged", () => {
+    const board = new Board(4, BOARD_SIZES[4]);
+    for (const proto of piecesFor(4)) {
+      const piece = spawnPiece(proto, board, 4);
+      expect(piece.origin, proto.label).toEqual([2, 13, 2, 0]);
+      expect(piece.blocks, proto.label).toEqual(proto.blocks);
     }
   });
 

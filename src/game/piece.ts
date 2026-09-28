@@ -33,7 +33,7 @@ export function spawnPiece(
   const origin: CellCoord = new Array(dim).fill(0);
   for (let axis = 0; axis < dim; axis++) {
     const size = board.size[axis];
-    const lo = -min[axis];
+    const lo = 0 - min[axis]; // "0 -" avoids -0 in origins
     const hi = size - 1 - max[axis];
     let want: number;
     if (axis === AXIS_Y) {
@@ -43,8 +43,9 @@ export function spawnPiece(
       // historical spawn column; clamped so wide pieces stay inside narrow boards
       want = Math.floor(size / 2) - 1;
     } else {
-      // w / v / u: centre the piece's extent on the axis
-      want = Math.floor((size - (max[axis] - min[axis] + 1)) / 2) - min[axis];
+      // w / v / u: slice 0, where the view cursor starts and never follows the
+      // piece on its own. Centring here would spawn pieces out of sight.
+      want = 0 - min[axis];
     }
     origin[axis] = Math.min(hi, Math.max(lo, want));
   }
