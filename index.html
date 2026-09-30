@@ -177,6 +177,8 @@
         -webkit-backdrop-filter: blur(4px);
       }
       #gameover.show, #help-overlay.show, #pause-overlay.show { display: flex; }
+      /* Help can be opened over pause / game over; keep it on top. */
+      #help-overlay { z-index: 21; }
       #gameover h2 {
         font-size: 56px;
         margin: 0;

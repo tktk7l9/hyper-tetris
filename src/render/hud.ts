@@ -2,6 +2,7 @@ import type { DimMode } from "../dims/coords.js";
 import type { PiecePrototype } from "../dims/pieces.js";
 import { absoluteCells } from "../game/piece.js";
 import type { GameState } from "../game/state.js";
+import { activeDialog, tabTarget } from "./dialog-focus.js";
 
 export class Hud {
   private elScore: HTMLElement;
@@ -84,10 +85,14 @@ export class Hud {
     // for keyboard users while a dialog is open.
     document.addEventListener("keydown", (e) => {
       if (e.key !== "Tab") return;
-      const dialog = [this.elGameOver, this.elHelp, this.elPause].find((el) =>
-        el.classList.contains("show"),
-      );
-      if (dialog) trapTab(dialog, e);
+      const name = activeDialog({
+        help: isShown(this.elHelp),
+        pause: isShown(this.elPause),
+        gameover: isShown(this.elGameOver),
+      });
+      if (name === null) return;
+      const dialog = { help: this.elHelp, pause: this.elPause, gameover: this.elGameOver }[name];
+      trapTab(dialog, e);
     });
   }
 
@@ -166,7 +171,12 @@ export class Hud {
     const was = this.elHelp.classList.contains("show");
     this.elHelp.classList.toggle("show", open);
     if (open && !was) this.btnHelpClose.focus({ preventScroll: true });
-    if (!open && was) this.btnHelpClose.blur();
+    if (!open && was) {
+      // Hand focus back to the dialog underneath so Enter / Tab keep working.
+      if (isShown(this.elGameOver)) this.btnRestart.focus({ preventScroll: true });
+      else if (isShown(this.elPause)) this.btnPauseHelp.focus({ preventScroll: true });
+      else this.btnHelpClose.blur();
+    }
   }
 
   setStatus(flags: { audio: boolean; auto: boolean }) {
@@ -407,22 +417,16 @@ function setPill(btn: HTMLButtonElement, label: string, on: boolean) {
 function trapTab(dialog: HTMLElement, e: KeyboardEvent) {
   const focusable = Array.from(
     dialog.querySelectorAll<HTMLElement>("button:not([disabled]), [tabindex]:not([tabindex='-1'])"),
-  ).filter((el) => !el.hidden);
-  if (focusable.length === 0) return;
-  const first = focusable[0];
-  const last = focusable[focusable.length - 1];
-  const active = document.activeElement;
-  const inside = active instanceof HTMLElement && dialog.contains(active);
-  if (!inside) {
-    e.preventDefault();
-    (e.shiftKey ? last : first).focus({ preventScroll: true });
-  } else if (e.shiftKey && active === first) {
-    e.preventDefault();
-    last.focus({ preventScroll: true });
-  } else if (!e.shiftKey && active === last) {
-    e.preventDefault();
-    first.focus({ preventScroll: true });
-  }
+  ).filter((el) => !el.hidden && el.getClientRects().length > 0);
+  const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  const target = tabTarget(focusable, active, e.shiftKey);
+  if (target === null) return;
+  e.preventDefault();
+  target.focus({ preventScroll: true });
+}
+
+function isShown(el: HTMLElement): boolean {
+  return el.classList.contains("show");
 }
 
 function byId(id: string): HTMLElement {

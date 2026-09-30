@@ -6,7 +6,7 @@ export default defineConfig({
     environment: "node",
     coverage: {
       provider: "v8",
-      include: ["src/game/pause.ts"],
+      include: ["src/game/pause.ts", "src/render/dialog-focus.ts"],
       thresholds: { lines: 100, functions: 100, statements: 100, branches: 100 },
     },
   },
