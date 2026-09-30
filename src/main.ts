@@ -214,7 +214,7 @@ let last = performance.now();
 let prevClears = 0;
 let prevMode = state.mode;
 let prevGameOver = false;
-let prevPieceRef: typeof state.current = null;
+let prevLocks = state.lockCount;
 let prevLines = 0;
 
 function frame(t: number) {
@@ -224,13 +224,13 @@ function frame(t: number) {
   autopilot.step(state, t);
   state.tick(dt);
 
-  // SFX: piece locked (current changed and lines didn't change → just lock)
-  if (state.current !== prevPieceRef) {
-    if (prevPieceRef && state.stats.lines === prevLines && !state.gameOver) {
-      audio.playSfx("lock");
-    }
-    prevPieceRef = state.current;
+  // SFX: piece locked without clearing anything (clears and game over have
+  // their own cues). Hold swaps, restarts and undo change the piece but are
+  // not locks, so the counter is compared instead of the piece reference.
+  if (state.lockCount > prevLocks && state.stats.lines === prevLines && !state.gameOver) {
+    audio.playSfx("lock");
   }
+  prevLocks = state.lockCount;
 
   // detect newly cleared lines for FX
   if (state.lastClears.length > prevClears && state.lastClears.length > 0) {

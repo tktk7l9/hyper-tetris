@@ -60,6 +60,8 @@ export class GameState {
   public lockTimer = 0;
   /** lines just cleared (for FX); consumed each tick. */
   public lastClears: number[] = [];
+  /** Pieces locked into the board since the last reset (drives the lock SFX). */
+  public lockCount = 0;
 
   constructor(mode: DimMode = 3) {
     this.mode = mode;
@@ -80,6 +82,7 @@ export class GameState {
     this.lockTimer = 0;
     this.next = randomPiece(mode);
     this.lastClears = [];
+    this.lockCount = 0;
     this.current = null;
     this.hold = null;
     this.holdLocked = false;
@@ -208,6 +211,7 @@ export class GameState {
   private lockCurrent(): void {
     if (!this.current) return;
     lockIn(this.current, this.board);
+    this.lockCount++;
     const cleared = this.board.clearFullHyperplanes();
     this.lastClears = cleared;
     if (cleared.length > 0) {
