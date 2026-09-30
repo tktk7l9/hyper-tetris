@@ -255,6 +255,29 @@ describe("main wiring", () => {
       expect(isShown(byId("pause-overlay"))).toBe(false);
     });
 
+    it("does not pull focus back to RESUME on every frame while paused", async () => {
+      await launch();
+      pressKey("KeyP");
+      frame();
+      expect(document.activeElement).toBe(byId("pause-resume"));
+      byId("pause-restart").focus();
+      frame();
+      expect(document.activeElement).toBe(byId("pause-restart"));
+    });
+
+    it("ignores P and a stray RESUME after game over: no GO toast and no pause cue", async () => {
+      const { state } = await launch();
+      state.gameOver = true;
+      frame();
+      audioSpies.playSfx.mockClear();
+      const before = toast();
+      pressKey("KeyP");
+      await user.click(byId("pause-resume"));
+      expect(toast()).toBe(before);
+      expect(audioSpies.playSfx).not.toHaveBeenCalled();
+      expect(state.paused).toBe(false);
+    });
+
     it("resumes from the RESUME button and from the touch pause button", async () => {
       const { state } = await launch();
       await user.click(getByRole(byId("touch-actions"), "button", { name: "Pause" }));
@@ -399,6 +422,19 @@ describe("main wiring", () => {
       frame();
       expect(audioSpies.playSfx).not.toHaveBeenCalledWith("lock");
       expect(state.stats.score).toBeGreaterThan(0);
+    });
+
+    it("plays only the clear cue, not the lock thud, when a lock clears a plane", async () => {
+      const { state } = await launch();
+      frame();
+      pressKey("Space");
+      // stand in for the plane the locked piece completed
+      state.stats.lines += 1;
+      state.lastClears = [0];
+      audioSpies.playSfx.mockClear();
+      frame();
+      expect(audioSpies.playSfx).toHaveBeenCalledWith("clear");
+      expect(audioSpies.playSfx).not.toHaveBeenCalledWith("lock");
     });
 
     it("shows a CLEAR toast with particle bursts and a HYPER toast for four planes", async () => {
