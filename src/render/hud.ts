@@ -79,6 +79,16 @@ export class Hud {
       const btn = (e.target as Element | null)?.closest?.("button");
       if (btn instanceof HTMLButtonElement) btn.blur();
     });
+
+    // Modal overlays keep Tab focus inside them; the HUD behind is inert
+    // for keyboard users while a dialog is open.
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Tab") return;
+      const dialog = [this.elGameOver, this.elHelp, this.elPause].find((el) =>
+        el.classList.contains("show"),
+      );
+      if (dialog) trapTab(dialog, e);
+    });
   }
 
   bind(handlers: {
@@ -267,7 +277,8 @@ export class Hud {
       this.elHoldLabel.textContent = state.holdLocked
         ? `${state.hold.label} · LOCKED`
         : state.hold.label;
-      this.elHoldLabel.style.opacity = state.holdLocked ? "0.4" : "0.85";
+      // 0.6 keeps the dimmed "locked" label above 4.5:1 on the panel.
+      this.elHoldLabel.style.opacity = state.holdLocked ? "0.6" : "0.85";
     } else {
       this.elHoldLabel.textContent = "— empty —";
       this.elHoldLabel.style.opacity = "0.5";
@@ -390,6 +401,28 @@ function setPill(btn: HTMLButtonElement, label: string, on: boolean) {
   btn.classList.toggle("on", on);
   btn.classList.toggle("off", !on);
   btn.setAttribute("aria-pressed", String(on));
+}
+
+/** Keep Tab / Shift+Tab cycling through the buttons of an open dialog. */
+function trapTab(dialog: HTMLElement, e: KeyboardEvent) {
+  const focusable = Array.from(
+    dialog.querySelectorAll<HTMLElement>("button:not([disabled]), [tabindex]:not([tabindex='-1'])"),
+  ).filter((el) => !el.hidden);
+  if (focusable.length === 0) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  const active = document.activeElement;
+  const inside = active instanceof HTMLElement && dialog.contains(active);
+  if (!inside) {
+    e.preventDefault();
+    (e.shiftKey ? last : first).focus({ preventScroll: true });
+  } else if (e.shiftKey && active === first) {
+    e.preventDefault();
+    last.focus({ preventScroll: true });
+  } else if (!e.shiftKey && active === last) {
+    e.preventDefault();
+    first.focus({ preventScroll: true });
+  }
 }
 
 function byId(id: string): HTMLElement {

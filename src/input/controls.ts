@@ -51,6 +51,12 @@ export function attachControls(state: GameState, hooks: ControlsHooks = {}) {
         hooks.onHardDrop?.();
         break;
       case "Tab":
+        // While paused (pause / help dialogs) Tab must stay a focus key so
+        // keyboard players can reach RESUME / HELP / RESTART and the HUD.
+        if (state.paused) {
+          consumed = false;
+          break;
+        }
         hooks.onHold?.(state.swapHold());
         break;
       case "KeyP":

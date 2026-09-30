@@ -30,6 +30,9 @@ export function createRenderContext(parent: HTMLElement): RenderContext {
   renderer.setClearColor(0x05060c, 0);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
+  // The WebGL canvas has no DOM content; give assistive tech a name for it.
+  renderer.domElement.setAttribute("role", "img");
+  renderer.domElement.setAttribute("aria-label", "3D game board");
   parent.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
