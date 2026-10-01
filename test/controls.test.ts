@@ -14,13 +14,13 @@ function press(code: string) {
 
 describe("keyboard controls", () => {
   let detach: () => void;
-  let hooks: Required<Pick<ControlsHooks, "onEscape" | "onUndo" | "onPauseToggle">>;
+  let hooks: Required<Pick<ControlsHooks, "onEscape" | "onUndo" | "onPauseToggle" | "onHold">>;
   let state: GameState;
 
   beforeEach(() => {
     (globalThis as { window?: EventTarget }).window = new EventTarget();
     state = new GameState(3);
-    hooks = { onEscape: vi.fn(), onUndo: vi.fn(), onPauseToggle: vi.fn() };
+    hooks = { onEscape: vi.fn(), onUndo: vi.fn(), onPauseToggle: vi.fn(), onHold: vi.fn() };
     detach = attachControls(state, hooks);
   });
 
@@ -61,6 +61,19 @@ describe("keyboard controls", () => {
     const ev = press("Space");
     expect(ev.defaultPrevented).toBe(true);
     expect(Array.from(state.board.cells)).toEqual(cells);
+  });
+
+  it("leaves Tab to the browser while paused so focus can move between dialog buttons", () => {
+    state.paused = true;
+    const ev = press("Tab");
+    expect(ev.defaultPrevented).toBe(false);
+    expect(hooks.onHold).not.toHaveBeenCalled();
+  });
+
+  it("consumes Tab as hold while playing", () => {
+    const ev = press("Tab");
+    expect(ev.defaultPrevented).toBe(true);
+    expect(hooks.onHold).toHaveBeenCalledOnce();
   });
 
   it("leaves other keys alone after game over (Enter still activates the focused button)", () => {

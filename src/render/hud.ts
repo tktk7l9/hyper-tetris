@@ -2,6 +2,7 @@ import type { DimMode } from "../dims/coords.js";
 import type { PiecePrototype } from "../dims/pieces.js";
 import { absoluteCells } from "../game/piece.js";
 import type { GameState } from "../game/state.js";
+import { activeDialog, tabTarget } from "./dialog-focus.js";
 
 export class Hud {
   private elScore: HTMLElement;
@@ -78,6 +79,20 @@ export class Hud {
       if (e.detail === 0) return;
       const btn = (e.target as Element | null)?.closest?.("button");
       if (btn instanceof HTMLButtonElement) btn.blur();
+    });
+
+    // Modal overlays keep Tab focus inside them; the HUD behind is inert
+    // for keyboard users while a dialog is open.
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Tab") return;
+      const name = activeDialog({
+        help: isShown(this.elHelp),
+        pause: isShown(this.elPause),
+        gameover: isShown(this.elGameOver),
+      });
+      if (name === null) return;
+      const dialog = { help: this.elHelp, pause: this.elPause, gameover: this.elGameOver }[name];
+      trapTab(dialog, e);
     });
   }
 
@@ -156,7 +171,12 @@ export class Hud {
     const was = this.elHelp.classList.contains("show");
     this.elHelp.classList.toggle("show", open);
     if (open && !was) this.btnHelpClose.focus({ preventScroll: true });
-    if (!open && was) this.btnHelpClose.blur();
+    if (!open && was) {
+      // Hand focus back to the dialog underneath so Enter / Tab keep working.
+      if (isShown(this.elGameOver)) this.btnRestart.focus({ preventScroll: true });
+      else if (isShown(this.elPause)) this.btnPauseHelp.focus({ preventScroll: true });
+      else this.btnHelpClose.blur();
+    }
   }
 
   setStatus(flags: { audio: boolean; auto: boolean }) {
@@ -267,7 +287,8 @@ export class Hud {
       this.elHoldLabel.textContent = state.holdLocked
         ? `${state.hold.label} · LOCKED`
         : state.hold.label;
-      this.elHoldLabel.style.opacity = state.holdLocked ? "0.4" : "0.85";
+      // 0.6 keeps the dimmed "locked" label above 4.5:1 on the panel.
+      this.elHoldLabel.style.opacity = state.holdLocked ? "0.6" : "0.85";
     } else {
       this.elHoldLabel.textContent = "— empty —";
       this.elHoldLabel.style.opacity = "0.5";
@@ -390,6 +411,22 @@ function setPill(btn: HTMLButtonElement, label: string, on: boolean) {
   btn.classList.toggle("on", on);
   btn.classList.toggle("off", !on);
   btn.setAttribute("aria-pressed", String(on));
+}
+
+/** Keep Tab / Shift+Tab cycling through the buttons of an open dialog. */
+function trapTab(dialog: HTMLElement, e: KeyboardEvent) {
+  const focusable = Array.from(
+    dialog.querySelectorAll<HTMLElement>("button:not([disabled]), [tabindex]:not([tabindex='-1'])"),
+  ).filter((el) => !el.hidden && el.getClientRects().length > 0);
+  const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  const target = tabTarget(focusable, active, e.shiftKey);
+  if (target === null) return;
+  e.preventDefault();
+  target.focus({ preventScroll: true });
+}
+
+function isShown(el: HTMLElement): boolean {
+  return el.classList.contains("show");
 }
 
 function byId(id: string): HTMLElement {

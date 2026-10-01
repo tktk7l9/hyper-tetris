@@ -31,6 +31,17 @@
         --warn: #ffb86b;
       }
       * { box-sizing: border-box; }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+        border: 0;
+      }
       html, body {
         margin: 0;
         padding: 0;
@@ -79,6 +90,9 @@
       #panel-keys summary {
         cursor: pointer;
         list-style: none;
+        display: flex;
+        align-items: center;
+        min-height: 28px;
         font-size: 12px;
         font-weight: 700;
         color: var(--accent);
@@ -163,13 +177,15 @@
         -webkit-backdrop-filter: blur(4px);
       }
       #gameover.show, #help-overlay.show, #pause-overlay.show { display: flex; }
-      #gameover h1 {
+      /* Help can be opened over pause / game over; keep it on top. */
+      #help-overlay { z-index: 21; }
+      #gameover h2 {
         font-size: 56px;
         margin: 0;
         color: var(--warn);
         letter-spacing: 0.1em;
       }
-      #pause-overlay h1 {
+      #pause-overlay h2 {
         font-size: 64px;
         margin: 0;
         color: var(--accent);
@@ -197,7 +213,7 @@
         padding: 14px 32px !important;
         font-size: 16px !important;
       }
-      #help-overlay h1 {
+      #help-overlay h2 {
         font-size: 36px;
         margin: 0;
         color: var(--accent);
@@ -279,6 +295,7 @@
         color: var(--accent);
         font-size: 12px;
         letter-spacing: 0.2em;
+        min-height: 28px;
         padding: 6px 14px;
         border-radius: 999px;
         cursor: pointer;
@@ -300,6 +317,7 @@
         color: inherit;
         font-size: 12px;
         letter-spacing: 0.18em;
+        min-height: 28px;
         padding: 3px 10px;
         border-radius: 999px;
         font-family: ui-monospace, monospace;
@@ -307,7 +325,7 @@
         backdrop-filter: blur(6px);
       }
       .status-pill.on  { color: #5cf2ff; border: 1px solid rgba(92,242,255,0.5); box-shadow: 0 0 12px rgba(92,242,255,0.25); }
-      .status-pill.off { color: #6c7390; border: 1px solid rgba(108,115,144,0.4); }
+      .status-pill.off { color: #9aa1bb; border: 1px solid rgba(154,161,187,0.45); }
       .badge {
         display: inline-block;
         padding: 1px 6px;
@@ -496,6 +514,7 @@
         pointer-events: auto;
       }
       .start-title {
+        margin: 0;
         font-size: 72px;
         font-weight: 900;
         color: var(--accent);
@@ -529,9 +548,9 @@
         letter-spacing: 0.2em;
       }
       @media (max-width: 600px) {
-        #help-overlay h1 { font-size: 24px; letter-spacing: 0.1em; text-align: center; }
+        #help-overlay h2 { font-size: 24px; letter-spacing: 0.1em; text-align: center; }
         #help-overlay .help-grid { grid-template-columns: 1fr; gap: 12px; }
-        #pause-overlay h1 { font-size: 44px; letter-spacing: 0.2em; }
+        #pause-overlay h2 { font-size: 44px; letter-spacing: 0.2em; }
       }
       @media (max-width: 480px) {
         .start-title { font-size: 42px; letter-spacing: 0.1em; }
@@ -540,10 +559,11 @@
     </style>
   </head>
   <body>
-    <div id="app">
+    <main id="app">
       <div id="hud">
+        <h1 class="sr-only">Hyper Tetris — 3D / 4D / 5D / 6D</h1>
         <div id="start-screen">
-          <h1 class="start-title">HYPER TETRIS</h1>
+          <p class="start-title" aria-hidden="true">HYPER TETRIS</p>
           <p class="start-sub">3D / 4D / 5D / 6D</p>
           <button id="start-btn" type="button">START GAME</button>
           <p class="start-hint"><span class="only-keys">or press any key</span><span class="only-touch">or tap anywhere</span></p>
@@ -562,12 +582,12 @@
         </div>
         <div id="panel-hold" class="panel">
           <h2>Hold <span class="badge">TAB</span></h2>
-          <canvas id="hold-canvas" class="preview-canvas" width="140" height="100"></canvas>
+          <canvas id="hold-canvas" class="preview-canvas" width="140" height="100" aria-hidden="true"></canvas>
           <div class="preview-label" id="hold-label">— empty —</div>
         </div>
         <div id="panel-next" class="panel">
           <h2>Next</h2>
-          <canvas id="next-canvas" class="preview-canvas" width="140" height="100"></canvas>
+          <canvas id="next-canvas" class="preview-canvas" width="140" height="100" aria-hidden="true"></canvas>
           <div class="preview-label" id="next-label">—</div>
         </div>
         <details id="panel-keys" class="panel" open>
@@ -615,22 +635,22 @@
             <button class="touch-btn" type="button" data-act="m5">5D</button>
             <button class="touch-btn" type="button" data-act="m6">6D</button>
           </div>
-          <div id="touch-slice">
-            <button class="touch-btn" type="button" data-act="w+" data-axis="0">w+</button>
-            <button class="touch-btn" type="button" data-act="w-" data-axis="0">w−</button>
-            <button class="touch-btn" type="button" data-act="v+" data-axis="1">v+</button>
-            <button class="touch-btn" type="button" data-act="v-" data-axis="1">v−</button>
-            <button class="touch-btn" type="button" data-act="u+" data-axis="2">u+</button>
-            <button class="touch-btn" type="button" data-act="u-" data-axis="2">u−</button>
+          <div id="touch-slice" role="group" aria-label="Slice">
+            <button class="touch-btn" type="button" aria-label="Next w slice" data-act="w+" data-axis="0">w+</button>
+            <button class="touch-btn" type="button" aria-label="Previous w slice" data-act="w-" data-axis="0">w−</button>
+            <button class="touch-btn" type="button" aria-label="Next v slice" data-act="v+" data-axis="1">v+</button>
+            <button class="touch-btn" type="button" aria-label="Previous v slice" data-act="v-" data-axis="1">v−</button>
+            <button class="touch-btn" type="button" aria-label="Next u slice" data-act="u+" data-axis="2">u+</button>
+            <button class="touch-btn" type="button" aria-label="Previous u slice" data-act="u-" data-axis="2">u−</button>
           </div>
-          <div id="touch-dpad">
+          <div id="touch-dpad" role="group" aria-label="Move">
             <button class="touch-btn" type="button" data-act="up" aria-label="Move back">▲</button>
             <button class="touch-btn" type="button" data-act="left" aria-label="Move left">◀</button>
             <button class="touch-btn" type="button" data-act="soft" aria-label="Soft drop">SOFT</button>
             <button class="touch-btn" type="button" data-act="right" aria-label="Move right">▶</button>
             <button class="touch-btn" type="button" data-act="down" aria-label="Move forward">▼</button>
           </div>
-          <div id="touch-actions">
+          <div id="touch-actions" role="group" aria-label="Actions">
             <button class="touch-btn" type="button" data-act="rotateAlt" aria-label="Rotate counter-clockwise">↺</button>
             <button class="touch-btn" type="button" data-act="rotate" aria-label="Rotate clockwise">↻</button>
             <button class="touch-btn" type="button" data-act="hold">HOLD</button>
@@ -644,7 +664,7 @@
           <button id="undo-btn" type="button">UNDO<span class="only-keys"> (U)</span></button>
         </div>
         <div id="pause-overlay" role="dialog" aria-modal="true" aria-labelledby="pause-title">
-          <h1 id="pause-title">PAUSED</h1>
+          <h2 id="pause-title">PAUSED</h2>
           <button id="pause-resume" type="button">RESUME</button>
           <div class="hint only-keys">or press <kbd style="background:rgba(92,242,255,0.15);border:1px solid rgba(92,242,255,0.35);padding:2px 8px;border-radius:4px;">P</kbd> / <kbd style="background:rgba(92,242,255,0.15);border:1px solid rgba(92,242,255,0.35);padding:2px 8px;border-radius:4px;">Esc</kbd></div>
           <div class="pause-actions pause-secondary">
@@ -653,7 +673,7 @@
           </div>
         </div>
         <div id="help-overlay" role="dialog" aria-modal="true" aria-labelledby="help-title">
-          <h1 id="help-title">HYPER TETRIS — GUIDE</h1>
+          <h2 id="help-title">HYPER TETRIS — GUIDE</h2>
           <div class="help-grid">
             <div>
               <h3>What's a slice?</h3>
@@ -675,12 +695,12 @@
           <button id="help-close" type="button">CLOSE<span class="only-keys"> (Esc)</span></button>
         </div>
         <div id="gameover" role="dialog" aria-modal="true" aria-labelledby="gameover-title">
-          <h1 id="gameover-title">GAME OVER</h1>
+          <h2 id="gameover-title">GAME OVER</h2>
           <div id="final-score" style="font-size: 18px; opacity: 0.8;"></div>
           <button id="restart-btn" type="button">PLAY AGAIN<span class="only-keys"> (R)</span></button>
         </div>
       </div>
-    </div>
+    </main>
     <script type="module" src="/src/boot.ts"></script>
   </body>
 </html>
