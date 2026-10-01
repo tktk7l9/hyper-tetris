@@ -11,13 +11,24 @@ describe("Hud", () => {
   let hud: Hud;
   let canvases: Map<string, CanvasStub>;
 
+  // Each Hud adds document-level listeners; drop them after every test so a
+  // stale Hud (whose dialogs stay "shown" off-document) cannot react to keys.
+  let docListeners: Array<[string, EventListenerOrEventListenerObject]>;
+
   beforeEach(() => {
     vi.useFakeTimers();
     ({ canvases } = mountApp());
+    docListeners = [];
+    const add = document.addEventListener.bind(document);
+    vi.spyOn(document, "addEventListener").mockImplementation((type, listener, options) => {
+      docListeners.push([type, listener]);
+      add(type, listener, options);
+    });
     hud = new Hud();
   });
 
   afterEach(() => {
+    for (const [type, listener] of docListeners) document.removeEventListener(type, listener);
     vi.useRealTimers();
     vi.restoreAllMocks();
   });
@@ -96,7 +107,7 @@ describe("Hud", () => {
       state.swapHold();
       hud.update(state);
       expect(byId("hold-label").textContent).toBe(`${state.hold!.label} · LOCKED`);
-      expect(byId("hold-label").style.opacity).toBe("0.4");
+      expect(byId("hold-label").style.opacity).toBe("0.6");
 
       state.holdLocked = false;
       hud.update(state);
@@ -209,6 +220,84 @@ describe("Hud", () => {
       expect(isShown(byId("help-overlay"))).toBe(false);
       expect(document.activeElement).not.toBe(byId("help-close"));
       hud.setHelp(false);
+    });
+
+    it("hands focus back to the dialog underneath when help closes", () => {
+      hud.setGameOver(true, 10);
+      hud.setHelp(true);
+      expect(document.activeElement).toBe(byId("help-close"));
+      hud.setHelp(false);
+      expect(document.activeElement).toBe(byId("restart-btn"));
+      hud.setGameOver(false);
+
+      hud.setPaused(true);
+      hud.setHelp(true);
+      hud.setHelp(false);
+      expect(document.activeElement).toBe(byId("pause-help"));
+    });
+  });
+
+  describe("dialog focus trap", () => {
+    // jsdom has no layout; report one box per element so visible buttons count
+    // as focusable. `hidden` still drops a button from the cycle.
+    beforeEach(() => {
+      vi.spyOn(HTMLElement.prototype, "getClientRects").mockReturnValue([
+        {} as DOMRect,
+      ] as unknown as DOMRectList);
+    });
+
+    function tab(shiftKey = false): KeyboardEvent {
+      const ev = new KeyboardEvent("keydown", { key: "Tab", shiftKey, bubbles: true, cancelable: true });
+      document.dispatchEvent(ev);
+      return ev;
+    }
+
+    it("wraps Tab and Shift+Tab inside the pause dialog", () => {
+      hud.setPaused(true);
+      expect(document.activeElement).toBe(byId("pause-resume"));
+      expect(tab().defaultPrevented).toBe(false);
+
+      byId("pause-restart").focus();
+      expect(tab().defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(byId("pause-resume"));
+
+      expect(tab(true).defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(byId("pause-restart"));
+    });
+
+    it("pulls focus from the HUD behind back into the open dialog", () => {
+      hud.setGameOver(true, 1);
+      byId("help-fab").focus();
+      expect(tab().defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(byId("restart-btn"));
+    });
+
+    it("traps focus in help when it is open over game over", () => {
+      hud.setGameOver(true, 1);
+      hud.setHelp(true);
+      byId("restart-btn").focus();
+      tab();
+      expect(document.activeElement).toBe(byId("help-close"));
+    });
+
+    it("skips hidden buttons and leaves a dialog with none to the browser", () => {
+      hud.setPaused(true);
+      byId("pause-restart").hidden = true;
+      byId("pause-help").focus();
+      expect(tab().defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(byId("pause-resume"));
+
+      for (const b of byId("pause-overlay").querySelectorAll("button")) b.hidden = true;
+      expect(tab().defaultPrevented).toBe(false);
+    });
+
+    it("ignores other keys and Tab when no dialog is open", () => {
+      byId("help-fab").focus();
+      expect(tab().defaultPrevented).toBe(false);
+      hud.setPaused(true);
+      const ev = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+      document.dispatchEvent(ev);
+      expect(ev.defaultPrevented).toBe(false);
     });
   });
 
