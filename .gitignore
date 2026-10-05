@@ -5,3 +5,8 @@ dist
 .vite
 .vercel
 coverage
+
+# Local secrets and Cloudflare local state
+.env*
+.dev.vars*
+.wrangler
