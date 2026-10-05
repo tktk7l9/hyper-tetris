@@ -42,16 +42,6 @@ export function inBounds(coord: CellCoord, size: number[]): boolean {
   return true;
 }
 
-export function cloneCoord(c: CellCoord): CellCoord {
-  return c.slice();
-}
-
-export function addCoord(a: CellCoord, b: CellCoord): CellCoord {
-  const out = new Array(a.length);
-  for (let i = 0; i < a.length; i++) out[i] = a[i] + b[i];
-  return out;
-}
-
 export function zeros(dim: number): CellCoord {
   return new Array(dim).fill(0);
 }
