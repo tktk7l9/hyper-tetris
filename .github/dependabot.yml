@@ -1,5 +1,12 @@
 version: 2
 updates:
+  # Workflow actions are pinned to commits in ci.yml / dependabot-auto-merge.yml;
+  # this keeps the pins moving.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
   - package-ecosystem: "npm"
     directory: "/"
     schedule:

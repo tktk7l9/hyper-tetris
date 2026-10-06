@@ -46,5 +46,5 @@ npm run dev   # http://localhost:5173
 
 2026-08-11、Vercel 無料枠の超過でアカウントが停止（全プロジェクトが
 `402 DEPLOYMENT_DISABLED`）したため移行した。`wrangler.jsonc` の `assets` だけで
-配信し、セキュリティヘッダーは `public/_headers`（`vercel.json` の `headers` を
-移植）。`npm run deploy` で build + wrangler deploy。vercel.json は残置。
+配信し、セキュリティヘッダーは `public/_headers`（`test/headers.test.ts` で固定）。
+`npm run deploy` で build + wrangler deploy。
