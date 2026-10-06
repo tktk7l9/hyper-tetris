@@ -1,0 +1,554 @@
+/* Page styles. Kept in a stylesheet (not an inline <style>) so the CSP's
+   style-src stays 'self' with no 'unsafe-inline'. Loaded by src/boot.ts. */
+
+:root {
+  color-scheme: dark;
+  --bg: #05060c;
+  --fg: #e7eaf6;
+  --accent: #5cf2ff;
+  --accent-2: #c77dff;
+  --warn: #ffb86b;
+}
+* { box-sizing: border-box; }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(199,125,255,0.18) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 90%, rgba(92,242,255,0.14) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 50%, #0c1030 0%, #04050a 75%);
+  color: var(--fg);
+  font-family: ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
+    "Hiragino Sans", "Yu Gothic UI", sans-serif;
+  overflow: hidden;
+}
+#app { position: relative; width: 100vw; height: 100vh; }
+canvas { display: block; }
+#hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.panel {
+  position: absolute;
+  background: linear-gradient(180deg, rgba(10,14,32,0.72), rgba(7,9,22,0.62));
+  border: 1px solid rgba(92, 242, 255, 0.25);
+  border-radius: 12px;
+  padding: 12px 14px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-size: 13px;
+  line-height: 1.5;
+  box-shadow:
+    0 0 24px rgba(92,242,255,0.06),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.panel h2 {
+  margin: 0 0 6px 0;
+  font-size: 12px;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+#panel-stats { top: 16px; left: 16px; min-width: 200px; }
+#panel-mode  { top: 16px; right: 16px; min-width: 220px; text-align: right; }
+#panel-keys  { bottom: 16px; left: 16px; max-width: 320px; font-size: 12px; opacity: 0.9; pointer-events: auto; }
+#panel-keys summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+#panel-keys summary::-webkit-details-marker { display: none; }
+#panel-keys summary::after { content: " ▸"; opacity: 0.7; }
+#panel-keys[open] summary::after { content: " ▾"; }
+#panel-keys[open] summary { margin-bottom: 6px; }
+#panel-mini[hidden] { display: none; }
+#panel-mini  { bottom: 16px; right: 16px; }
+#panel-hold  { top: 160px; left: 16px; width: 160px; text-align: center; }
+#panel-next  { top: 160px; right: 16px; width: 160px; text-align: center; }
+.preview-canvas {
+  background: rgba(0,0,0,0.45);
+  border-radius: 8px;
+  margin-top: 4px;
+}
+#panel-mini canvas { background: rgba(0,0,0,0.4); border-radius: 6px; }
+.preview-label {
+  font-size: 12px;
+  opacity: 0.7;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+#toast {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-shadow: 0 0 24px var(--accent);
+  opacity: 0;
+  transition: opacity .25s ease-out;
+  pointer-events: none;
+}
+#toast.show { opacity: 1; }
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.stat-row span:last-child { color: var(--accent); font-variant-numeric: tabular-nums; }
+.keymap {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+}
+.keymap kbd {
+  background: rgba(92, 242, 255, 0.12);
+  border: 1px solid rgba(92, 242, 255, 0.3);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.keymap-section {
+  grid-column: 1 / -1;
+  margin: 4px 0 1px 0;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  color: var(--accent-2);
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+#gameover, #help-overlay, #pause-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(2, 4, 12, 0.78);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  pointer-events: auto;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+#gameover.show, #help-overlay.show, #pause-overlay.show { display: flex; }
+/* Help can be opened over pause / game over; keep it on top. */
+#help-overlay { z-index: 21; }
+#gameover h2 {
+  font-size: 56px;
+  margin: 0;
+  color: var(--warn);
+  letter-spacing: 0.1em;
+}
+#pause-overlay h2 {
+  font-size: 64px;
+  margin: 0;
+  color: var(--accent);
+  letter-spacing: 0.3em;
+  text-shadow: 0 0 36px var(--accent);
+}
+#pause-overlay .hint, #help-overlay .hint {
+  font-size: 12px;
+  opacity: 0.7;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+#help-overlay {
+  justify-content: safe center;
+  overflow-y: auto;
+  padding: 24px 16px;
+}
+#pause-overlay .pause-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+#pause-resume {
+  min-width: 200px;
+  padding: 14px 32px !important;
+  font-size: 16px !important;
+}
+#help-overlay h2 {
+  font-size: 36px;
+  margin: 0;
+  color: var(--accent);
+  letter-spacing: 0.18em;
+}
+#help-overlay .help-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  max-width: 720px;
+  font-size: 13px;
+}
+#help-overlay .help-grid h3 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: var(--accent-2);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+#gameover button, #help-overlay button, #pause-overlay button {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 10px 28px;
+  font-size: 14px;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  border-radius: 6px;
+}
+#gameover button:hover, #help-overlay button:hover, #pause-overlay button:hover { background: rgba(92,242,255,0.12); }
+#pause-overlay .pause-secondary button {
+  color: var(--fg);
+  border-color: rgba(231,234,246,0.35);
+  font-size: 12px;
+  padding: 8px 18px;
+}
+button:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+#undo-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: none;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 8px 8px 16px;
+  border-radius: 999px;
+  background: rgba(10,14,32,0.92);
+  border: 1px solid rgba(255,184,107,0.6);
+  font-size: 13px;
+  pointer-events: auto;
+  white-space: nowrap;
+}
+#undo-bar.show { display: flex; }
+#undo-btn {
+  background: rgba(255,184,107,0.16);
+  color: var(--warn);
+  border: 1px solid var(--warn);
+  border-radius: 999px;
+  padding: 6px 16px;
+  min-height: 32px;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  font-family: inherit;
+  cursor: pointer;
+}
+.only-touch { display: none; }
+#help-fab {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10,14,32,0.7);
+  border: 1px solid rgba(92, 242, 255, 0.35);
+  color: var(--accent);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  min-height: 28px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  pointer-events: auto;
+  backdrop-filter: blur(6px);
+}
+#help-fab:hover { background: rgba(92,242,255,0.15); }
+#status-bar {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%) translateY(36px);
+  display: flex;
+  gap: 6px;
+  pointer-events: auto;
+}
+.status-pill {
+  cursor: pointer;
+  color: inherit;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  min-height: 28px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-family: ui-monospace, monospace;
+  background: rgba(10,14,32,0.6);
+  backdrop-filter: blur(6px);
+}
+.status-pill.on  { color: #5cf2ff; border: 1px solid rgba(92,242,255,0.5); box-shadow: 0 0 12px rgba(92,242,255,0.25); }
+.status-pill.off { color: #9aa1bb; border: 1px solid rgba(154,161,187,0.45); }
+.badge {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  border-radius: 4px;
+  background: rgba(199,125,255,0.18);
+  color: var(--accent-2);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* ------------ Touch controls ------------ */
+#touch-controls { display: none; }
+.touch-btn {
+  background: rgba(10,14,32,0.7);
+  border: 1px solid rgba(92,242,255,0.4);
+  color: var(--accent);
+  font-size: 18px;
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-weight: 600;
+  border-radius: 14px;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background 0.08s ease;
+}
+.touch-btn:active {
+  background: rgba(92,242,255,0.32);
+  border-color: var(--accent);
+}
+.touch-btn[hidden] { display: none; }
+#touch-dpad {
+  position: absolute;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  left: max(16px, env(safe-area-inset-left));
+  display: grid;
+  grid-template-columns: 56px 56px 56px;
+  grid-template-rows: 56px 56px 56px;
+  gap: 4px;
+  pointer-events: auto;
+}
+#touch-dpad .touch-btn { width: 56px; height: 56px; font-size: 22px; }
+#touch-dpad [data-act="up"]    { grid-column: 2; grid-row: 1; }
+#touch-dpad [data-act="left"]  { grid-column: 1; grid-row: 2; }
+#touch-dpad [data-act="soft"]  { grid-column: 2; grid-row: 2; font-size: 14px; }
+#touch-dpad [data-act="right"] { grid-column: 3; grid-row: 2; }
+#touch-dpad [data-act="down"]  { grid-column: 2; grid-row: 3; }
+
+#touch-actions {
+  position: absolute;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  right: max(16px, env(safe-area-inset-right));
+  display: grid;
+  grid-template-columns: 64px 64px;
+  grid-template-rows: 56px 56px 56px;
+  gap: 6px;
+  pointer-events: auto;
+}
+#touch-actions .touch-btn { font-size: 16px; }
+#touch-actions [data-act="hard"] {
+  grid-column: 1 / span 2;
+  grid-row: 3;
+  background: rgba(199,125,255,0.18);
+  border-color: rgba(199,125,255,0.55);
+  color: var(--accent-2);
+  font-size: 14px;
+  letter-spacing: 0.18em;
+}
+#touch-actions [data-act="hard"]:active {
+  background: rgba(199,125,255,0.4);
+}
+
+#touch-slice {
+  position: absolute;
+  right: max(12px, env(safe-area-inset-right));
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: auto;
+}
+#touch-slice .touch-btn {
+  width: 48px;
+  height: 32px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+
+#touch-mode {
+  position: absolute;
+  top: calc(max(12px, env(safe-area-inset-top)) + 76px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  pointer-events: auto;
+}
+#touch-mode .touch-btn {
+  width: 44px;
+  height: 30px;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  padding: 0;
+}
+#touch-mode .touch-btn.active {
+  background: rgba(92,242,255,0.3);
+  border-color: var(--accent);
+}
+
+/* Show touch UI on touch-first devices and shrink HUD */
+@media (pointer: coarse), (max-width: 720px) {
+  #touch-controls { display: block; }
+  #panel-keys { display: none; }
+  #panel-stats {
+    top: 12px;
+    left: 12px;
+    min-width: 0;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  #panel-stats .stat-row { gap: 10px; }
+  #panel-mode {
+    top: 12px;
+    right: 12px;
+    min-width: 0;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  #panel-mode > div:first-of-type { font-size: 18px !important; }
+  #panel-hold, #panel-next {
+    top: auto;
+    bottom: 200px;
+    width: 76px;
+    padding: 6px;
+  }
+  #panel-hold { left: 8px; }
+  #panel-next { right: 8px; }
+  #panel-hold canvas, #panel-next canvas { width: 64px; height: 48px; }
+  #panel-hold h2, #panel-next h2 { font-size: 12px; margin-bottom: 2px; }
+  #panel-hold .preview-label, #panel-next .preview-label { font-size: 12px; }
+  #panel-mini { padding: 6px; }
+  #status-bar { top: max(12px, env(safe-area-inset-top)); transform: translateX(-50%) translateY(34px); }
+  .status-pill { min-height: 28px; padding: 4px 8px; font-size: 11px; letter-spacing: 0.04em; white-space: nowrap; }
+  #help-fab { top: max(12px, env(safe-area-inset-top)); }
+  #panel-mini {
+    right: auto;
+    left: 8px;
+    bottom: auto;
+    top: 50%;
+    transform: translateY(-50%) scale(0.7);
+    transform-origin: left center;
+  }
+  #undo-bar { bottom: auto; top: calc(max(12px, env(safe-area-inset-top)) + 116px); }
+  #help-fab { font-size: 12px; padding: 5px 10px; min-height: 28px; }
+  #toast { font-size: 24px; }
+}
+
+/* Key hints follow the input device, not the window width: a narrow
+   desktop window still has a keyboard and no touch screen. */
+@media (pointer: coarse) {
+  .only-touch { display: inline; }
+  .only-keys { display: none; }
+}
+
+/* Very narrow / portrait phones */
+@media (max-width: 480px) {
+  #panel-hold, #panel-next { display: none; }
+}
+
+/* Start screen */
+#start-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  z-index: 200;
+  pointer-events: auto;
+}
+.start-title {
+  margin: 0;
+  font-size: 72px;
+  font-weight: 900;
+  color: var(--accent);
+  letter-spacing: 0.2em;
+  text-shadow: 0 0 60px var(--accent), 0 0 120px rgba(92,242,255,0.4);
+  text-align: center;
+}
+.start-sub {
+  font-size: 18px;
+  color: var(--accent-2);
+  letter-spacing: 0.3em;
+  opacity: 0.9;
+}
+#start-btn {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 14px 40px;
+  font-size: 16px;
+  letter-spacing: 0.3em;
+  cursor: pointer;
+  border-radius: 6px;
+  font-family: inherit;
+  box-shadow: 0 0 24px rgba(92,242,255,0.2);
+}
+#start-btn:hover { background: rgba(92,242,255,0.12); box-shadow: 0 0 36px rgba(92,242,255,0.35); }
+.start-hint {
+  font-size: 12px;
+  color: var(--fg);
+  opacity: 0.5;
+  letter-spacing: 0.2em;
+}
+@media (max-width: 600px) {
+  #help-overlay h2 { font-size: 24px; letter-spacing: 0.1em; text-align: center; }
+  #help-overlay .help-grid { grid-template-columns: 1fr; gap: 12px; }
+  #pause-overlay h2 { font-size: 44px; letter-spacing: 0.2em; }
+}
+@media (max-width: 480px) {
+  .start-title { font-size: 42px; letter-spacing: 0.1em; }
+  .start-sub { font-size: 14px; }
+}
+
+/* Rules that used to be inline style="" attributes in index.html. */
+#stat-mode { font-size: 28px; font-weight: 700; color: var(--accent); }
+#stat-slice { font-size: 11px; opacity: 0.7; }
+#pause-overlay .hint kbd {
+  background: rgba(92, 242, 255, 0.15);
+  border: 1px solid rgba(92, 242, 255, 0.35);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+#help-overlay .help-grid p { opacity: 0.85; line-height: 1.6; }
+#help-overlay .help-grid kbd {
+  background: rgba(92, 242, 255, 0.15);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+#final-score { font-size: 18px; opacity: 0.8; }
