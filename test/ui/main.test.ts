@@ -22,7 +22,7 @@ const audioSpies = {
 };
 const fxSpies = { spawnBurst: vi.fn(), update: vi.fn() };
 const viewSpies = { resizeForBoard: vi.fn(), update: vi.fn() };
-const ctxSpies = { render: vi.fn(), cameraSet: vi.fn() };
+const ctxSpies = { render: vi.fn(), cameraSet: vi.fn(), backgroundUpdate: vi.fn() };
 
 vi.mock("../../src/audio/audio.js", () => ({
   AudioEngine: class {
@@ -47,7 +47,7 @@ vi.mock("../../src/render/renderer.js", () => ({
     camera: { position: { set: ctxSpies.cameraSet } },
     renderer: { domElement: document.createElement("canvas") },
     scene: { add: vi.fn() },
-    background: { update: vi.fn() },
+    background: { update: ctxSpies.backgroundUpdate },
     render: ctxSpies.render,
   }),
 }));
@@ -452,6 +452,28 @@ describe("main wiring", () => {
       expect(toast()).toBe("4 × HYPER!");
       expect(fxSpies.spawnBurst).toHaveBeenCalledTimes(20);
       expect(audioSpies.playSfx).toHaveBeenLastCalledWith("hyperclear");
+    });
+
+    it("keeps the backdrop and the clear sparks still under prefers-reduced-motion", async () => {
+      vi.stubGlobal("matchMedia", (query: string) => ({ matches: query === "(prefers-reduced-motion: reduce)" }));
+      try {
+        const { state } = await launch();
+        frame();
+        state.lastClears = [0];
+        frame();
+        expect(toast()).toBe("1 CLEAR");
+        expect(fxSpies.spawnBurst).not.toHaveBeenCalled();
+        expect(ctxSpies.backgroundUpdate).not.toHaveBeenCalled();
+        expect(ctxSpies.render).toHaveBeenCalled();
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it("animates the backdrop when motion is not reduced", async () => {
+      await launch();
+      frame();
+      expect(ctxSpies.backgroundUpdate).toHaveBeenCalled();
     });
 
     it("shows the final score on game over, stops the autopilot and lets R start over", async () => {
