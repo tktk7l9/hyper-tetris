@@ -85,6 +85,36 @@ describe("boot", () => {
     expect(byId<HTMLDetailsElement>("panel-keys").open).toBe(true);
   });
 
+  it("brings the start screen back as a reload prompt when the bundle fails to load", async () => {
+    await boot();
+    vi.doMock("../../src/main.js", () => {
+      throw new TypeError("Failed to fetch dynamically imported module");
+    });
+    const reload = vi.fn();
+    vi.stubGlobal("location", { reload });
+    const screen = byId("start-screen");
+    const btn = byId("start-btn");
+
+    btn.click();
+    await flush();
+    expect(screen.style.display).toBe("");
+    expect(byId("start-screen").querySelector(".start-hint")?.textContent).toBe(
+      "Could not load the game. Reload the page to try again.",
+    );
+    expect(btn.textContent).toBe("RELOAD");
+    expect(mainLoads).not.toHaveBeenCalled();
+
+    btn.click();
+    await flush();
+    expect(reload).toHaveBeenCalledOnce();
+    // The broken import is not retried on the START handler or the key path.
+    document.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyQ" }));
+    await flush();
+    expect(mainLoads).not.toHaveBeenCalled();
+    expect(reload).toHaveBeenCalledOnce();
+    vi.unstubAllGlobals();
+  });
+
   it("injects the analytics beacon only in production", async () => {
     await boot();
     expect(document.querySelector("script[data-cf-beacon]")).toBeNull();
