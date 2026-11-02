@@ -30,6 +30,11 @@ const state = new GameState(3);
 const view = new BoardView();
 ctx.scene.add(view.group);
 const fx = new EffectsLayer();
+// Decorative motion (line-clear sparks, the drifting and twinkling backdrop) stops under
+// prefers-reduced-motion. The falling pieces are the game itself and keep moving
+// (WCAG 2.3.3, SHIG 7). Read on every use so a system setting change applies at once.
+const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+const decorate = () => !(reducedMotion?.matches ?? false);
 ctx.scene.add(fx.group);
 
 const hud = new Hud();
@@ -236,7 +241,7 @@ function frame(t: number) {
   if (state.lastClears.length > prevClears && state.lastClears.length > 0) {
     const sx = state.board.size[0];
     const sz = state.board.size[2];
-    for (const y of state.lastClears) {
+    for (const y of decorate() ? state.lastClears : []) {
       const wpos = new THREE.Vector3(0, (y + 0.5), 0);
       for (let i = 0; i < 4; i++) {
         const off = new THREE.Vector3(
@@ -264,7 +269,7 @@ function frame(t: number) {
 
   view.update(state, (k) => kindColorMap.get(k) ?? 0xffffff);
   fx.update(dt);
-  ctx.background.update(dt);
+  if (decorate()) ctx.background.update(dt);
   hud.update(state, pause.helpOpen);
 
   if (state.gameOver) {
