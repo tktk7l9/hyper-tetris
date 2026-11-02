@@ -26,7 +26,27 @@ async function startGame() {
   started = true;
   const screen = document.getElementById("start-screen");
   if (screen) screen.style.display = "none";
-  await import("./main.js");
+  try {
+    await import("./main.js");
+  } catch {
+    showLoadFailure(screen);
+  }
+}
+
+// A dropped connection, or an index.html that still points at a chunk a newer
+// deploy removed, rejects the import. Browsers remember a failed module fetch,
+// so retrying the import would fail again; bring the start screen back and
+// turn START into a reload (fail-safe, escape hatch). `started` stays true so
+// the original handlers do not re-run the broken import.
+function showLoadFailure(screen: HTMLElement | null) {
+  if (screen) screen.style.display = "";
+  const hint = document.querySelector(".start-hint");
+  if (hint) hint.textContent = "Could not load the game. Reload the page to try again.";
+  const btn = document.getElementById("start-btn");
+  if (btn) {
+    btn.textContent = "RELOAD";
+    btn.addEventListener("click", () => location.reload());
+  }
 }
 
 document.getElementById("start-btn")?.addEventListener("click", startGame);
